@@ -1,179 +1,59 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Radio Dial – PWA</title>
-<meta name="theme-color" content="#10161d"/>
-<link rel="manifest" href="manifest.json"/>
-<link rel="icon" href="icons/icon-192.png" sizes="192x192"/>
-<link rel="apple-touch-icon" href="icons/icon-192.png"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
-<style>
-  :root{ --panel:#171b21; --text:#e7edf3; --muted:#9fb0c0; --line:#2a3542; --accent1:#ff6a00; --accent2:#ff0033; }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{margin:0; background:#0c1116; color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; display:grid; place-items:center; padding:16px}
-  .app{width:min(440px,96vw); background:var(--panel); border-radius:18px; overflow:hidden; border:1px solid #0b0f14}
-  .topbar{padding:12px 16px; text-align:center; background:#10161d; border-bottom:1px solid #0e141a}
-  .topfreq{font-size:56px; font-weight:800; letter-spacing:.5px}
-  .mhz{font-size:14px; color:var(--muted); margin-left:6px}
-  .dial{ position:relative; background:#10161d; border-top:1px solid #0e141a; border-bottom:1px solid #0e141a; padding:22px 0 54px }
-  .scale{ position:relative; height:52px; margin:0 24px; background:linear-gradient(180deg,#0b1117,#0a0f14); border:1px solid #0b1218; border-radius:10px }
-  .tick{ position:absolute; bottom:12px; width:1px; background:#394555 }
-  .tick.minor{ height:10px; opacity:.6 }
-  .tick.major{ height:18px }
-  .label{ position:absolute; top:66px; transform:translateX(-50%); font-size:11px; color:#93a4b5; letter-spacing:.3px }
-  .needle-rail{ position:absolute; left:24px; right:24px; top:14px; height:66px }
-  .needle{ position:absolute; top:0; left:0; width:2px; height:66px; border-radius:2px; background:linear-gradient(180deg,var(--accent1),var(--accent2)); filter: drop-shadow(0 0 8px rgba(255,70,0,.45)); transform:translateX(0); transition: transform .35s ease-out }
-  .freq-tag{ position:absolute; top:-10px; left:0; transform:translateX(-50%); font:700 12px/1.2 system-ui,-apple-system,Segoe UI,Roboto; color:#0b0f14; background:#e9f1f8; border-radius:999px; padding:6px 10px; box-shadow:0 4px 14px rgba(0,0,0,.35) }
-  .freq-tag .unit{ font-weight:600; color:#51606e; margin-left:4px }
-  .controls{display:flex; justify-content:center; gap:22px; padding:12px; background:#0f151c}
-  .btn{appearance:none; border:none; background:transparent; color:var(--text); font-size:24px; cursor:pointer; padding:8px}
-  .btn:hover{opacity:.9}
-  .btn:active{opacity:.75}
-  .presets{ padding:10px 12px 16px; background:#0e141b }
-  .preset{ display:flex; align-items:center; gap:10px; padding:12px 14px; margin:6px 0; border-radius:12px; cursor:pointer; background:#121821; color:var(--text); border:1px solid #1a2330 }
-  .preset:hover{ background:#15202a }
-  .preset.active{ outline:2px solid #ff5a00; box-shadow:0 0 0 3px rgba(255,60,0,.14) }
-  .preset .title{ font-weight:700 }
-  .preset .meta{ color:#b9c6d2; margin-left:auto }
-</style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Radio Daniel</title>
+  <meta name="theme-color" content="#2b2f38"/>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app" role="application" aria-label="Radio Player">
-    <div class="topbar"><span class="topfreq" id="topFreq">0.0</span><span class="mhz"> MHz</span></div>
-    <section class="dial">
-      <div class="scale" id="scale"></div>
-      <div class="needle-rail" id="rail">
-        <div class="needle" id="needle"></div>
-        <div class="freq-tag" id="freqTag">0.0<span class="unit">MHz</span></div>
-      </div>
-    </section>
-    <div class="controls">
-      <button class="btn" id="prev" aria-label="Anterior">⏮</button>
-      <button class="btn" id="play" aria-label="Reproducir o pausar">▶</button>
-      <button class="btn" id="next" aria-label="Siguiente">⏭</button>
+  <div class="app">
+    <div class="header">Radio Daniel</div>
+    <div id="freq" class="frequency">--</div>
+    <div id="song" class="subtitle">Seleccioná una emisora</div>
+
+    <div class="dial" aria-label="Dial">
+      <div class="ticks" id="ticks"></div>
+      <div class="labels" id="labels"></div>
+      <div class="needle" id="needle"></div>
     </div>
-    <div class="presets" id="presets" aria-label="Emisoras"></div>
+
+    <div class="controls">
+      <button class="btn" id="prev" title="Anterior" aria-label="Anterior">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6V5zm2.5 7 9.5 7V5l-9.5 7z"/></svg>
+      </button>
+      <button class="btn btn--play" id="play" title="Reproducir/Pausar" aria-label="Reproducir/Pausar">
+        <svg id="playIcon" class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7L8 5z"/></svg>
+      </button>
+      <button class="btn" id="next" title="Siguiente" aria-label="Siguiente">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 5h-2v14h2V5zm-2.5 7-9.5 7V5l9.5 7z"/></svg>
+      </button>
+    </div>
+
+    <div class="grid" id="cards"></div>
   </div>
 
-  <audio id="audio" preload="none" crossorigin="anonymous"></audio>
+  <!-- Pill restored with Prev / Play-Pause / Next / Stop (flat) -->
+  <div class="pill" id="pill" style="display:none">
+    <div class="dot" aria-hidden="true"></div>
+    <div class="meta">
+      <div class="title" id="pillTitle">—</div>
+      <div class="sub">Reproduciendo</div>
+    </div>
+    <div class="pill-controls">
+      <button id="pillPrev" title="Anterior" aria-label="Anterior"><svg class="icon-flat" viewBox="0 0 24 24"><path d="M6 5h2v14H6V5zm2.5 7 9.5 7V5l-9.5 7z"/></svg></button>
+      <button id="pillToggle" title="Play/Pause" aria-label="Play/Pause"><svg id="pillIcon" class="icon-flat" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z"/></svg></button>
+      <button id="pillNext" title="Siguiente" aria-label="Siguiente"><svg class="icon-flat" viewBox="0 0 24 24"><path d="M18 5h-2v14h2V5zm-2.5 7-9.5 7V5l9.5 7z"/></svg></button>
+      <button id="pillStop" title="Stop" aria-label="Stop"><svg class="icon-flat" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg></button>
+    </div>
+  </div>
 
-<script>
-(function(){
-  const stations = [
-    { name: 'Now 97.9',   freq: 97.9,  url: 'https://ipanel.instream.audio:7002/stream' },
-    { name: 'Blue 100.7', freq: 100.7, url: 'https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac' },
-    { name: 'Aspen 102.3',freq: 102.3, url: 'https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3' },
-    { name: 'LN+ 104.9',  freq: 104.9, url: 'https://stream.radio.co/s2ed3bec0a/listen' },
-  ];
+  <audio id="player" crossorigin="anonymous"></audio>
 
-  const FM_MIN = 87.0, FM_MAX = 108.0;
-  const audio   = document.getElementById('audio');
-  const rail    = document.getElementById('rail');
-  const needle  = document.getElementById('needle');
-  const scaleEl = document.getElementById('scale');
-  const presetsEl = document.getElementById('presets');
-  const btnPlay = document.getElementById('play');
-  const btnPrev = document.getElementById('prev');
-  const btnNext = document.getElementById('next');
-  const topFreq = document.getElementById('topFreq');
-  const freqTag = document.getElementById('freqTag');
-
-  let current = 0;
-
-  // Escala: ticks cada 0.5, etiquetas cada 2 MHz
-  function buildScale(){
-    const total = FM_MAX - FM_MIN;
-    for(let f=FM_MIN; f<=FM_MAX + 1e-6; f+=0.5){
-      const p = (f - FM_MIN)/total * 100;
-      const majorInt = Math.abs(f % 1) < 1e-6;
-      const labelEvery2 = majorInt && (Math.round(f) % 2 === 0);
-      const tick = document.createElement('div');
-      tick.className = 'tick ' + (majorInt? 'major':'minor');
-      tick.style.left = `calc(${p}% - .5px)`;
-      scaleEl.appendChild(tick);
-      if(labelEvery2){
-        const label = document.createElement('div');
-        label.className = 'label';
-        label.style.left = `${p}%`;
-        label.textContent = Math.round(f);
-        scaleEl.appendChild(label);
-      }
-    }
-  }
-
-  function railWidth(){ return rail.clientWidth; }
-  function posForFreq(freq){
-    const p = (Math.min(Math.max(freq,FM_MIN),FM_MAX) - FM_MIN) / (FM_MAX - FM_MIN);
-    return Math.round(p * railWidth());
-  }
-  function moveNeedle(freq){
-    const x = posForFreq(freq);
-    needle.style.transform = `translateX(${x}px)`;
-    freqTag.style.left = x + 'px';
-    freqTag.firstChild.nodeValue = freq.toFixed(1)+' ';
-  }
-
-  function tune(index){
-    current = (index + stations.length) % stations.length;
-    const st = stations[current];
-    moveNeedle(st.freq);
-    topFreq.textContent = st.freq.toFixed(1);
-    if(audio.src !== st.url) audio.src = st.url;
-    audio.play().catch(()=>{});
-    updatePlayIcon();
-    if('mediaSession' in navigator){
-      navigator.mediaSession.metadata = new MediaMetadata({title: st.name, artist:'Radio FM', album:'Live'});
-    }
-    document.querySelectorAll('.preset').forEach((el,i)=> el.classList.toggle('active', i===current));
-  }
-
-  function buildPresets(){
-    stations.forEach((s,i)=>{
-      const row = document.createElement('button');
-      row.className = 'preset';
-      row.innerHTML = `<div class="title">${s.name}</div><div class="meta">${s.freq.toFixed(1)} MHz</div>`;
-      row.addEventListener('click', ()=> tune(i));
-      presetsEl.appendChild(row);
-    });
-  }
-
-  function updatePlayIcon(){ btnPlay.textContent = audio.paused ? '▶' : '⏸'; }
-
-  // Eventos
-  btnPlay.addEventListener('click', async ()=>{ if(audio.paused) await audio.play(); else audio.pause(); updatePlayIcon(); });
-  btnPrev.addEventListener('click', ()=> tune(current-1));
-  btnNext.addEventListener('click', ()=> tune(current+1));
-  audio.addEventListener('pause', updatePlayIcon);
-  audio.addEventListener('play', updatePlayIcon);
-
-  // Media Session (para controles del sistema)
-  if('mediaSession' in navigator){
-    try{
-      navigator.mediaSession.setActionHandler('play', ()=>{audio.play();});
-      navigator.mediaSession.setActionHandler('pause', ()=>{audio.pause();});
-      navigator.mediaSession.setActionHandler('previoustrack', ()=>tune(current-1));
-      navigator.mediaSession.setActionHandler('nexttrack', ()=>tune(current+1));
-    }catch(e){}
-  }
-
-  window.addEventListener('resize', ()=> moveNeedle(stations[current].freq));
-
-  // SW Register
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('service-worker.js');
-    });
-  }
-
-  // Init
-  buildScale();
-  buildPresets();
-  tune(0);
-})();
-</script>
+  <script src="js/app.js" defer></script>
 </body>
 </html>
