@@ -1,199 +1,179 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Radio FM – Preview</title>
-  <style>
-    :root{
-      --bg:#0f1220;--card:#171b2e;--muted:#8fa0c6;--accent:#3b82f6;--text:#f2f5ff;--danger:#ef4444;
-    }
-    *{box-sizing:border-box;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
-    html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--text)}
-    .app{max-width:920px;margin:0 auto;padding:16px;display:grid;gap:16px;grid-template-columns:1fr}
-    @media(min-width:900px){.app{grid-template-columns:420px 1fr}}
-    .card{background:#0f1630;border:1px solid rgba(255,255,255,.08);border-radius:18px}
-    .card-inner{padding:20px}
-    .topbar{display:flex;align-items:center;justify-content:space-between;opacity:.95}
-    .freq{font-size:84px;line-height:.9;margin:12px 0 0 0;letter-spacing:1px}
-    .mhz{font-size:16px;opacity:.8;margin-left:6px}
-    .station-sub{color:var(--muted);margin:6px 0 10px;font-weight:600}
-    .spectrum{height:36px;display:flex;gap:3px;margin:12px 0 20px}
-    .bar{flex:1;background:#223268;border-radius:2px;opacity:.6;animation:beat 1.2s linear infinite;transform-origin:bottom}
-    .bar:nth-child(odd){animation-duration:1.05s}
-    .bar:nth-child(3n){animation-duration:1.35s}
-    @keyframes beat{0%{transform:scaleY(.3)}50%{transform:scaleY(1)}100%{transform:scaleY(.35)}}
-    .controls{display:flex;align-items:center;gap:10px;margin-top:8px}
-    button{cursor:pointer;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;background:#0d1531;color:var(--text)}
-    button.icon{width:48px;height:48px;display:grid;place-items:center;padding:0}
-    button.primary{background:#1e2a55}
-    button.ghost{background:#0d1531}
-    .ico{width:22px;height:22px;display:block;stroke:currentColor;fill:none;stroke-width:2}
-    .ico.fill{fill:currentColor;stroke:none}
-    .pill{display:inline-flex;align-items:center;gap:8px;background:#0d1531;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:8px 12px;color:#cfe1ff}
-    .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .list{background:var(--card);border-radius:18px;border:1px solid rgba(255,255,255,.08);overflow:hidden}
-    .item{display:grid;grid-template-columns:56px 1fr auto;gap:12px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08);align-items:center}
-    .item:last-child{border-bottom:0}
-    .logo{width:48px;height:48px;border-radius:10px;display:grid;place-items:center;font-weight:900;background:#0d1330}
-    .logo small{opacity:.8}
-    .meta{line-height:1.1}
-    .meta b{font-size:18px}
-    .meta .sub{color:var(--muted);font-size:12px;margin-top:4px}
-    .fav{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;background:#0d1531;border:1px solid rgba(255,255,255,.12)}
-    .fav.active{outline:2px solid #2a3a72}
-    .hint{font-size:12px;color:#9fb3da;opacity:.8;margin-top:10px}
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Radio Dial – PWA</title>
+<meta name="theme-color" content="#10161d"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" href="icons/icon-192.png" sizes="192x192"/>
+<link rel="apple-touch-icon" href="icons/icon-192.png"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<style>
+  :root{ --panel:#171b21; --text:#e7edf3; --muted:#9fb0c0; --line:#2a3542; --accent1:#ff6a00; --accent2:#ff0033; }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0; background:#0c1116; color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; display:grid; place-items:center; padding:16px}
+  .app{width:min(440px,96vw); background:var(--panel); border-radius:18px; overflow:hidden; border:1px solid #0b0f14}
+  .topbar{padding:12px 16px; text-align:center; background:#10161d; border-bottom:1px solid #0e141a}
+  .topfreq{font-size:56px; font-weight:800; letter-spacing:.5px}
+  .mhz{font-size:14px; color:var(--muted); margin-left:6px}
+  .dial{ position:relative; background:#10161d; border-top:1px solid #0e141a; border-bottom:1px solid #0e141a; padding:22px 0 54px }
+  .scale{ position:relative; height:52px; margin:0 24px; background:linear-gradient(180deg,#0b1117,#0a0f14); border:1px solid #0b1218; border-radius:10px }
+  .tick{ position:absolute; bottom:12px; width:1px; background:#394555 }
+  .tick.minor{ height:10px; opacity:.6 }
+  .tick.major{ height:18px }
+  .label{ position:absolute; top:66px; transform:translateX(-50%); font-size:11px; color:#93a4b5; letter-spacing:.3px }
+  .needle-rail{ position:absolute; left:24px; right:24px; top:14px; height:66px }
+  .needle{ position:absolute; top:0; left:0; width:2px; height:66px; border-radius:2px; background:linear-gradient(180deg,var(--accent1),var(--accent2)); filter: drop-shadow(0 0 8px rgba(255,70,0,.45)); transform:translateX(0); transition: transform .35s ease-out }
+  .freq-tag{ position:absolute; top:-10px; left:0; transform:translateX(-50%); font:700 12px/1.2 system-ui,-apple-system,Segoe UI,Roboto; color:#0b0f14; background:#e9f1f8; border-radius:999px; padding:6px 10px; box-shadow:0 4px 14px rgba(0,0,0,.35) }
+  .freq-tag .unit{ font-weight:600; color:#51606e; margin-left:4px }
+  .controls{display:flex; justify-content:center; gap:22px; padding:12px; background:#0f151c}
+  .btn{appearance:none; border:none; background:transparent; color:var(--text); font-size:24px; cursor:pointer; padding:8px}
+  .btn:hover{opacity:.9}
+  .btn:active{opacity:.75}
+  .presets{ padding:10px 12px 16px; background:#0e141b }
+  .preset{ display:flex; align-items:center; gap:10px; padding:12px 14px; margin:6px 0; border-radius:12px; cursor:pointer; background:#121821; color:var(--text); border:1px solid #1a2330 }
+  .preset:hover{ background:#15202a }
+  .preset.active{ outline:2px solid #ff5a00; box-shadow:0 0 0 3px rgba(255,60,0,.14) }
+  .preset .title{ font-weight:700 }
+  .preset .meta{ color:#b9c6d2; margin-left:auto }
+</style>
 </head>
 <body>
-  <svg width="0" height="0" style="position:absolute">
-    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7-11-7z" fill="currentColor"/></symbol>
-    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></symbol>
-    <symbol id="i-stop" viewBox="0 0 24 24"><path d="M6 6h12v12H6z" fill="currentColor"/></symbol>
-    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21s-7.5-4.35-9.3-8.55C1.7 9.5 3.3 7 6 7c2 0 3.3 1 4 2 .7-1 2-2 4-2 2.7 0 4.3 2.5 3.3 5.45C19.5 16.65 12 21 12 21z" fill="currentColor"/></symbol>
-    <symbol id="i-heart-line" viewBox="0 0 24 24"><path d="M12.1 20.3C7.1 17 3.5 13.9 3.5 10.5A3.5 3.5 0 0 1 7 7c1.7 0 2.9.8 3.6 2 .7-1.2 1.9-2 3.6-2a3.5 3.5 0 0 1 3.5 3.5c0 3.4-3.6 6.5-8.6 9.8Z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
-  </svg>
-
-  <div class="app">
-    <section class="card" id="playerCard">
-      <div class="card-inner">
-        <div class="topbar">
-          <span class="pill" id="statusPill">Detenido</span>
-          <button id="favBtn" class="icon fav" title="Favorito" aria-label="Favorito"><svg class="ico"><use href="#i-heart-line"/></svg></button>
-        </div>
-        <div>
-          <div class="station-sub" id="stationName">Elegí una emisora</div>
-          <div class="row" style="align-items:flex-end">
-            <div class="freq" id="freq">--.-<span class="mhz">MHz</span></div>
-          </div>
-        </div>
-        <div class="spectrum" aria-hidden="true">
-          <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        </div>
-        <div class="controls">
-          <button id="playBtn" class="icon primary" aria-label="Reproducir"><svg class="ico"><use id="playUse" href="#i-play"/></svg></button>
-          <button id="stopBtn" class="icon ghost" aria-label="Detener"><svg class="ico"><use href="#i-stop"/></svg></button>
-        </div>
-        <div class="hint">Interfaz simple y sin volumen ni botón de abrir.</div>
+  <div class="app" role="application" aria-label="Radio Player">
+    <div class="topbar"><span class="topfreq" id="topFreq">0.0</span><span class="mhz"> MHz</span></div>
+    <section class="dial">
+      <div class="scale" id="scale"></div>
+      <div class="needle-rail" id="rail">
+        <div class="needle" id="needle"></div>
+        <div class="freq-tag" id="freqTag">0.0<span class="unit">MHz</span></div>
       </div>
-      <audio id="audio" preload="none" crossorigin="anonymous"></audio>
     </section>
-
-    <section class="list" id="stationList"></section>
+    <div class="controls">
+      <button class="btn" id="prev" aria-label="Anterior">⏮</button>
+      <button class="btn" id="play" aria-label="Reproducir o pausar">▶</button>
+      <button class="btn" id="next" aria-label="Siguiente">⏭</button>
+    </div>
+    <div class="presets" id="presets" aria-label="Emisoras"></div>
   </div>
 
-  <script>
-    const stations = [
-      { id:"now979", name:"Now 97.9", freq:"97.9", url:"https://ipanel.instream.audio:7002/stream" },
-      { id:"blue1007", name:"Blue 100.7", freq:"100.7", url:"https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac" },
-      { id:"aspen1023", name:"Aspen 102.3", freq:"102.3", url:"https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3" },
-      { id:"ln1049", name:"LN+ 104.9", freq:"104.9", url:"https://stream.radio.co/s2ed3bec0a/listen" },
-    ];
+  <audio id="audio" preload="none" crossorigin="anonymous"></audio>
 
-    const $ = sel => document.querySelector(sel);
-    const list = $('#stationList');
-    const audio = $('#audio');
-    const playBtn = $('#playBtn');
-    const stopBtn = $('#stopBtn');
-    const favBtn = $('#favBtn');
-    const statusPill = $('#statusPill');
-    const freq = $('#freq');
-    const stationName = $('#stationName');
-    const playUse = document.getElementById('playUse');
+<script>
+(function(){
+  const stations = [
+    { name: 'Now 97.9',   freq: 97.9,  url: 'https://ipanel.instream.audio:7002/stream' },
+    { name: 'Blue 100.7', freq: 100.7, url: 'https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac' },
+    { name: 'Aspen 102.3',freq: 102.3, url: 'https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3' },
+    { name: 'LN+ 104.9',  freq: 104.9, url: 'https://stream.radio.co/s2ed3bec0a/listen' },
+  ];
 
-    let current = null;
+  const FM_MIN = 87.0, FM_MAX = 108.0;
+  const audio   = document.getElementById('audio');
+  const rail    = document.getElementById('rail');
+  const needle  = document.getElementById('needle');
+  const scaleEl = document.getElementById('scale');
+  const presetsEl = document.getElementById('presets');
+  const btnPlay = document.getElementById('play');
+  const btnPrev = document.getElementById('prev');
+  const btnNext = document.getElementById('next');
+  const topFreq = document.getElementById('topFreq');
+  const freqTag = document.getElementById('freqTag');
 
-    function renderList(){
-      list.innerHTML = stations.map((s,i)=>{
-        const fav = isFav(s.id)?'active':'';
-        const heartIcon = isFav(s.id)?'#i-heart':'#i-heart-line';
-        return `
-        <div class="item" data-index="${i}">
-          <div class="logo">FM<br/><small>${s.freq}</small></div>
-          <div class="meta">
-            <b>${s.name}</b>
-            <div class="sub">${s.freq} MHz</div>
-          </div>
-          <button class="fav ${fav}" data-fav="${s.id}" title="Favorito" aria-label="Favorito">
-            <svg class="ico ${isFav(s.id)?'fill':''}"><use href="${heartIcon}"/></svg>
-          </button>
-        </div>`
-      }).join('');
+  let current = 0;
 
-      list.querySelectorAll('.item').forEach(el=>{
-        el.addEventListener('click', e=>{
-          if(e.target.closest('[data-fav]')) return;
-          const idx = +el.dataset.index; selectStation(idx); play();
-        })
-      });
-
-      list.querySelectorAll('[data-fav]').forEach(btn=>{
-        btn.addEventListener('click', e=>{
-          e.stopPropagation();
-          const id = btn.getAttribute('data-fav');
-          toggleFav(id);
-          btn.classList.toggle('active', isFav(id));
-          const use = btn.querySelector('use');
-          const svg = btn.querySelector('svg');
-          use.setAttribute('href', isFav(id)?'#i-heart':'#i-heart-line');
-          svg.classList.toggle('fill', isFav(id));
-          if(current && current.id===id) syncFavIcon();
-        })
-      })
+  // Escala: ticks cada 0.5, etiquetas cada 2 MHz
+  function buildScale(){
+    const total = FM_MAX - FM_MIN;
+    for(let f=FM_MIN; f<=FM_MAX + 1e-6; f+=0.5){
+      const p = (f - FM_MIN)/total * 100;
+      const majorInt = Math.abs(f % 1) < 1e-6;
+      const labelEvery2 = majorInt && (Math.round(f) % 2 === 0);
+      const tick = document.createElement('div');
+      tick.className = 'tick ' + (majorInt? 'major':'minor');
+      tick.style.left = `calc(${p}% - .5px)`;
+      scaleEl.appendChild(tick);
+      if(labelEvery2){
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.style.left = `${p}%`;
+        label.textContent = Math.round(f);
+        scaleEl.appendChild(label);
+      }
     }
+  }
 
-    const FKEY='radio.favs.v1';
-    const favs = new Set(JSON.parse(localStorage.getItem(FKEY) || '[]'));
-    const isFav = id => favs.has(id);
-    function toggleFav(id){
-      if(favs.has(id)) favs.delete(id); else favs.add(id);
-      localStorage.setItem(FKEY, JSON.stringify([...favs]));
+  function railWidth(){ return rail.clientWidth; }
+  function posForFreq(freq){
+    const p = (Math.min(Math.max(freq,FM_MIN),FM_MAX) - FM_MIN) / (FM_MAX - FM_MIN);
+    return Math.round(p * railWidth());
+  }
+  function moveNeedle(freq){
+    const x = posForFreq(freq);
+    needle.style.transform = `translateX(${x}px)`;
+    freqTag.style.left = x + 'px';
+    freqTag.firstChild.nodeValue = freq.toFixed(1)+' ';
+  }
+
+  function tune(index){
+    current = (index + stations.length) % stations.length;
+    const st = stations[current];
+    moveNeedle(st.freq);
+    topFreq.textContent = st.freq.toFixed(1);
+    if(audio.src !== st.url) audio.src = st.url;
+    audio.play().catch(()=>{});
+    updatePlayIcon();
+    if('mediaSession' in navigator){
+      navigator.mediaSession.metadata = new MediaMetadata({title: st.name, artist:'Radio FM', album:'Live'});
     }
+    document.querySelectorAll('.preset').forEach((el,i)=> el.classList.toggle('active', i===current));
+  }
 
-    function syncFavIcon(){
-      const use = favBtn.querySelector('use');
-      const svg = favBtn.querySelector('svg');
-      use.setAttribute('href', isFav(current.id)?'#i-heart':'#i-heart-line');
-      svg.classList.toggle('fill', isFav(current.id));
-      favBtn.classList.toggle('active', isFav(current.id));
-    }
+  function buildPresets(){
+    stations.forEach((s,i)=>{
+      const row = document.createElement('button');
+      row.className = 'preset';
+      row.innerHTML = `<div class="title">${s.name}</div><div class="meta">${s.freq.toFixed(1)} MHz</div>`;
+      row.addEventListener('click', ()=> tune(i));
+      presetsEl.appendChild(row);
+    });
+  }
 
-    function selectStation(idx){
-      current = stations[idx];
-      audio.src = current.url;
-      stationName.textContent = current.name;
-      freq.innerHTML = `${current.freq}<span class="mhz"> MHz</span>`;
-      syncFavIcon();
-      status('Lista');
-    }
+  function updatePlayIcon(){ btnPlay.textContent = audio.paused ? '▶' : '⏸'; }
 
-    function status(txt){ statusPill.textContent = txt; }
+  // Eventos
+  btnPlay.addEventListener('click', async ()=>{ if(audio.paused) await audio.play(); else audio.pause(); updatePlayIcon(); });
+  btnPrev.addEventListener('click', ()=> tune(current-1));
+  btnNext.addEventListener('click', ()=> tune(current+1));
+  audio.addEventListener('pause', updatePlayIcon);
+  audio.addEventListener('play', updatePlayIcon);
 
-    function setPlayState(paused){ playUse.setAttribute('href', paused?'#i-play':'#i-pause'); }
+  // Media Session (para controles del sistema)
+  if('mediaSession' in navigator){
+    try{
+      navigator.mediaSession.setActionHandler('play', ()=>{audio.play();});
+      navigator.mediaSession.setActionHandler('pause', ()=>{audio.pause();});
+      navigator.mediaSession.setActionHandler('previoustrack', ()=>tune(current-1));
+      navigator.mediaSession.setActionHandler('nexttrack', ()=>tune(current+1));
+    }catch(e){}
+  }
 
-    function play(){
-      if(!current) selectStation(0);
-      audio.play().then(()=>{ status('Reproduciendo'); setPlayState(false); })
-      .catch(err=>{ status('Error'); console.warn(err); alert('No se pudo reproducir.'); });
-    }
+  window.addEventListener('resize', ()=> moveNeedle(stations[current].freq));
 
-    function pause(){ audio.pause(); status('Pausado'); setPlayState(true); }
+  // SW Register
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js');
+    });
+  }
 
-    function stop(){ audio.pause(); audio.currentTime=0; status('Detenido'); setPlayState(true); }
-
-    playBtn.addEventListener('click',()=>{ if(audio.paused) play(); else pause(); });
-    stopBtn.addEventListener('click',stop);
-    favBtn.addEventListener('click',()=>{ if(!current) return; toggleFav(current.id); syncFavIcon(); renderList(); });
-
-    audio.addEventListener('playing', ()=> status('Reproduciendo'));
-    audio.addEventListener('pause', ()=> status('Pausado'));
-    audio.addEventListener('waiting', ()=> status('Conectando…'));
-    audio.addEventListener('stalled', ()=> status('Interrumpido'));
-
-    renderList();
-    selectStation(0);
-    setPlayState(true);
-  </script>
+  // Init
+  buildScale();
+  buildPresets();
+  tune(0);
+})();
+</script>
 </body>
 </html>
