@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Radio FM – Preview</title>
+  <style>
+    :root{
+      --bg:#0f1220;--card:#171b2e;--muted:#8fa0c6;--accent:#3b82f6;--text:#f2f5ff;--danger:#ef4444;
+    }
+    *{box-sizing:border-box;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text)}
+    .app{max-width:920px;margin:0 auto;padding:16px;display:grid;gap:16px;grid-template-columns:1fr}
+    @media(min-width:900px){.app{grid-template-columns:420px 1fr}}
+    .card{background:#0f1630;border:1px solid rgba(255,255,255,.08);border-radius:18px}
+    .card-inner{padding:20px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;opacity:.95}
+    .freq{font-size:84px;line-height:.9;margin:12px 0 0 0;letter-spacing:1px}
+    .mhz{font-size:16px;opacity:.8;margin-left:6px}
+    .station-sub{color:var(--muted);margin:6px 0 10px;font-weight:600}
+    .spectrum{height:36px;display:flex;gap:3px;margin:12px 0 20px}
+    .bar{flex:1;background:#223268;border-radius:2px;opacity:.6;animation:beat 1.2s linear infinite;transform-origin:bottom}
+    .bar:nth-child(odd){animation-duration:1.05s}
+    .bar:nth-child(3n){animation-duration:1.35s}
+    @keyframes beat{0%{transform:scaleY(.3)}50%{transform:scaleY(1)}100%{transform:scaleY(.35)}}
+    .controls{display:flex;align-items:center;gap:10px;margin-top:8px}
+    button{cursor:pointer;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;background:#0d1531;color:var(--text)}
+    button.icon{width:48px;height:48px;display:grid;place-items:center;padding:0}
+    button.primary{background:#1e2a55}
+    button.ghost{background:#0d1531}
+    .ico{width:22px;height:22px;display:block;stroke:currentColor;fill:none;stroke-width:2}
+    .ico.fill{fill:currentColor;stroke:none}
+    .pill{display:inline-flex;align-items:center;gap:8px;background:#0d1531;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:8px 12px;color:#cfe1ff}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .list{background:var(--card);border-radius:18px;border:1px solid rgba(255,255,255,.08);overflow:hidden}
+    .item{display:grid;grid-template-columns:56px 1fr auto;gap:12px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08);align-items:center}
+    .item:last-child{border-bottom:0}
+    .logo{width:48px;height:48px;border-radius:10px;display:grid;place-items:center;font-weight:900;background:#0d1330}
+    .logo small{opacity:.8}
+    .meta{line-height:1.1}
+    .meta b{font-size:18px}
+    .meta .sub{color:var(--muted);font-size:12px;margin-top:4px}
+    .fav{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;background:#0d1531;border:1px solid rgba(255,255,255,.12)}
+    .fav.active{outline:2px solid #2a3a72}
+    .hint{font-size:12px;color:#9fb3da;opacity:.8;margin-top:10px}
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute">
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7-11-7z" fill="currentColor"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><path d="M6 6h12v12H6z" fill="currentColor"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21s-7.5-4.35-9.3-8.55C1.7 9.5 3.3 7 6 7c2 0 3.3 1 4 2 .7-1 2-2 4-2 2.7 0 4.3 2.5 3.3 5.45C19.5 16.65 12 21 12 21z" fill="currentColor"/></symbol>
+    <symbol id="i-heart-line" viewBox="0 0 24 24"><path d="M12.1 20.3C7.1 17 3.5 13.9 3.5 10.5A3.5 3.5 0 0 1 7 7c1.7 0 2.9.8 3.6 2 .7-1.2 1.9-2 3.6-2a3.5 3.5 0 0 1 3.5 3.5c0 3.4-3.6 6.5-8.6 9.8Z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  </svg>
+
+  <div class="app">
+    <section class="card" id="playerCard">
+      <div class="card-inner">
+        <div class="topbar">
+          <span class="pill" id="statusPill">Detenido</span>
+          <button id="favBtn" class="icon fav" title="Favorito" aria-label="Favorito"><svg class="ico"><use href="#i-heart-line"/></svg></button>
+        </div>
+        <div>
+          <div class="station-sub" id="stationName">Elegí una emisora</div>
+          <div class="row" style="align-items:flex-end">
+            <div class="freq" id="freq">--.-<span class="mhz">MHz</span></div>
+          </div>
+        </div>
+        <div class="spectrum" aria-hidden="true">
+          <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        </div>
+        <div class="controls">
+          <button id="playBtn" class="icon primary" aria-label="Reproducir"><svg class="ico"><use id="playUse" href="#i-play"/></svg></button>
+          <button id="stopBtn" class="icon ghost" aria-label="Detener"><svg class="ico"><use href="#i-stop"/></svg></button>
+        </div>
+        <div class="hint">Interfaz simple y sin volumen ni botón de abrir.</div>
+      </div>
+      <audio id="audio" preload="none" crossorigin="anonymous"></audio>
+    </section>
+
+    <section class="list" id="stationList"></section>
+  </div>
+
+  <script>
+    const stations = [
+      { id:"now979", name:"Now 97.9", freq:"97.9", url:"https://ipanel.instream.audio:7002/stream" },
+      { id:"blue1007", name:"Blue 100.7", freq:"100.7", url:"https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac" },
+      { id:"aspen1023", name:"Aspen 102.3", freq:"102.3", url:"https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3" },
+      { id:"ln1049", name:"LN+ 104.9", freq:"104.9", url:"https://stream.radio.co/s2ed3bec0a/listen" },
+    ];
+
+    const $ = sel => document.querySelector(sel);
+    const list = $('#stationList');
+    const audio = $('#audio');
+    const playBtn = $('#playBtn');
+    const stopBtn = $('#stopBtn');
+    const favBtn = $('#favBtn');
+    const statusPill = $('#statusPill');
+    const freq = $('#freq');
+    const stationName = $('#stationName');
+    const playUse = document.getElementById('playUse');
+
+    let current = null;
+
+    function renderList(){
+      list.innerHTML = stations.map((s,i)=>{
+        const fav = isFav(s.id)?'active':'';
+        const heartIcon = isFav(s.id)?'#i-heart':'#i-heart-line';
+        return `
+        <div class="item" data-index="${i}">
+          <div class="logo">FM<br/><small>${s.freq}</small></div>
+          <div class="meta">
+            <b>${s.name}</b>
+            <div class="sub">${s.freq} MHz</div>
+          </div>
+          <button class="fav ${fav}" data-fav="${s.id}" title="Favorito" aria-label="Favorito">
+            <svg class="ico ${isFav(s.id)?'fill':''}"><use href="${heartIcon}"/></svg>
+          </button>
+        </div>`
+      }).join('');
+
+      list.querySelectorAll('.item').forEach(el=>{
+        el.addEventListener('click', e=>{
+          if(e.target.closest('[data-fav]')) return;
+          const idx = +el.dataset.index; selectStation(idx); play();
+        })
+      });
+
+      list.querySelectorAll('[data-fav]').forEach(btn=>{
+        btn.addEventListener('click', e=>{
+          e.stopPropagation();
+          const id = btn.getAttribute('data-fav');
+          toggleFav(id);
+          btn.classList.toggle('active', isFav(id));
+          const use = btn.querySelector('use');
+          const svg = btn.querySelector('svg');
+          use.setAttribute('href', isFav(id)?'#i-heart':'#i-heart-line');
+          svg.classList.toggle('fill', isFav(id));
+          if(current && current.id===id) syncFavIcon();
+        })
+      })
+    }
+
+    const FKEY='radio.favs.v1';
+    const favs = new Set(JSON.parse(localStorage.getItem(FKEY) || '[]'));
+    const isFav = id => favs.has(id);
+    function toggleFav(id){
+      if(favs.has(id)) favs.delete(id); else favs.add(id);
+      localStorage.setItem(FKEY, JSON.stringify([...favs]));
+    }
+
+    function syncFavIcon(){
+      const use = favBtn.querySelector('use');
+      const svg = favBtn.querySelector('svg');
+      use.setAttribute('href', isFav(current.id)?'#i-heart':'#i-heart-line');
+      svg.classList.toggle('fill', isFav(current.id));
+      favBtn.classList.toggle('active', isFav(current.id));
+    }
+
+    function selectStation(idx){
+      current = stations[idx];
+      audio.src = current.url;
+      stationName.textContent = current.name;
+      freq.innerHTML = `${current.freq}<span class="mhz"> MHz</span>`;
+      syncFavIcon();
+      status('Lista');
+    }
+
+    function status(txt){ statusPill.textContent = txt; }
+
+    function setPlayState(paused){ playUse.setAttribute('href', paused?'#i-play':'#i-pause'); }
+
+    function play(){
+      if(!current) selectStation(0);
+      audio.play().then(()=>{ status('Reproduciendo'); setPlayState(false); })
+      .catch(err=>{ status('Error'); console.warn(err); alert('No se pudo reproducir.'); });
+    }
+
+    function pause(){ audio.pause(); status('Pausado'); setPlayState(true); }
+
+    function stop(){ audio.pause(); audio.currentTime=0; status('Detenido'); setPlayState(true); }
+
+    playBtn.addEventListener('click',()=>{ if(audio.paused) play(); else pause(); });
+    stopBtn.addEventListener('click',stop);
+    favBtn.addEventListener('click',()=>{ if(!current) return; toggleFav(current.id); syncFavIcon(); renderList(); });
+
+    audio.addEventListener('playing', ()=> status('Reproduciendo'));
+    audio.addEventListener('pause', ()=> status('Pausado'));
+    audio.addEventListener('waiting', ()=> status('Conectando…'));
+    audio.addEventListener('stalled', ()=> status('Interrumpido'));
+
+    renderList();
+    selectStation(0);
+    setPlayState(true);
+  </script>
+</body>
+</html>
