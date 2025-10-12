@@ -1,9 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
   const stations = [
-    { name: "Now 97.9",   freq: 97.9, url: "https://ipanel.instream.audio:7002/stream" },
-    { name: "Blue 100.7", freq: 100.7, url: "https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac" },
-    { name: "Aspen 102.3", freq: 102.3, url: "https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3" },
-    { name: "LN+ 104.9",  freq: 104.9, url: "https://stream.radio.co/s2ed3bec0a/listen" },
+    { name: "Now",   freq: 97.9, url: "https://ipanel.instream.audio:7002/stream" },
+    { name: "Blue", freq: 100.7, url: "https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac" },
+    { name: "Aspen", freq: 102.3, url: "https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3" },
+    { name: "LN+",  freq: 104.9, url: "https://stream.radio.co/s2ed3bec0a/listen" },
   ];
 
   const MIN_FREQ = 88;
