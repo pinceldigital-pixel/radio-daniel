@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <title>Radio PWA</title>
+  <title>Radio PWA Pro</title>
   <meta name="theme-color" content="#111827">
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./icon-192.png">
@@ -41,6 +41,24 @@
             <polygon points="13 19 22 12 13 5 13 19"></polygon><polygon points="2 19 11 12 2 5 2 19"></polygon>
           </svg>
         </button>
+      </div>
+      <div class="row">
+        <div class="pill" style="gap:10px; flex-wrap:wrap">
+          <div style="display:flex; gap:8px; align-items:center">
+            <span class="label">Vista:</span>
+            <button id="viz-bars" class="btn smallbtn">Barras</button>
+            <button id="viz-dots" class="btn smallbtn">Puntos</button>
+            <button id="viz-line" class="btn smallbtn">Línea</button>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center">
+            <span class="label">Timer:</span>
+            <button class="btn smallbtn" id="timer-30">30m</button>
+            <button class="btn smallbtn" id="timer-60">60m</button>
+            <button class="btn smallbtn" id="timer-90">90m</button>
+            <span id="timer-left" class="label"></span>
+            <button class="btn smallbtn" id="timer-cancel" style="display:none">Cancelar</button>
+          </div>
+        </div>
       </div>
     </nav>
     <div id="toast" class="toast" style="display:none"></div>
