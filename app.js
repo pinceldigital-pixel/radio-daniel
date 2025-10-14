@@ -76,7 +76,7 @@ function setupAnalyser(){
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     const source = ctx.createMediaElementSource(audio);
     analyser = ctx.createAnalyser();
-    analyser.fftSize = 1024;
+    analyser.fftSize = 512;
     source.connect(analyser);
     analyser.connect(ctx.destination);
     dataArray = new Uint8Array(analyser.fftSize);
@@ -160,13 +160,17 @@ let rafId;
 let idleT = 0;
 
 
+
 function draw(){
   const w = canvas.width = canvas.clientWidth * devicePixelRatio;
   const h = canvas.height = canvas.clientHeight * devicePixelRatio;
   ctx2d.clearRect(0,0,w,h);
 
-  const DOT_PX = 8 * devicePixelRatio;     // diámetro del punto
-  const GAP_PX = 10 * devicePixelRatio;    // separación entre puntos
+  const DPR = Math.min(devicePixelRatio || 1, 3);
+  const MAX_DOTS = 140;                          // límite para móviles
+  const DOT_PX = Math.max(5 * DPR, 4);           // tamaño del punto
+  const baseline = h/2;
+  const t = performance.now()/1000;
 
   let array = null;
   if (analyser && playing){
@@ -174,36 +178,36 @@ function draw(){
     analyser.getByteTimeDomainData(array);
   }
 
-  // Recorremos el ancho y pintamos puntos
-  let x = 0, i = 0, t = (performance.now()/1000);
-  const baseline = h/2;
+  // Calcular paso de muestreo para no dibujar más de MAX_DOTS puntos
+  const step = Math.max(1, Math.floor((w / MAX_DOTS)));
+  const grad = ctx2d.createLinearGradient(0,0,w,0);
+  grad.addColorStop(0, '#ff3e3e');
+  grad.addColorStop(0.17, '#ff8c00');
+  grad.addColorStop(0.34, '#ffd400');
+  grad.addColorStop(0.51, '#3be477');
+  grad.addColorStop(0.68, '#32b1ff');
+  grad.addColorStop(0.85, '#8a5cff');
+  grad.addColorStop(1, '#ff3ef7');
+  ctx2d.fillStyle = grad;
 
-  while (x < w){
+  for (let x = 0; x < w; x += step){
     let y;
     if (array){
-      // map index to data array
       const idx = Math.floor((x / w) * (array.length-1));
       y = (array[idx] / 255) * h;
     } else {
-      // idle sinusoidal "respira"
       const A = h*0.18 * (0.75 + 0.25*Math.sin(t*0.8));
       const freq = 2*Math.PI / (w*0.6);
       y = baseline + Math.sin(x*freq + t) * A;
     }
-
-    // color arcoíris según posición X, con brillo que pulsa suavemente
-    const hue = (x / w) * 360;
-    const light = 55 + 10*Math.sin(t*2 + x*0.01);
-    ctx2d.fillStyle = `hsl(${hue} 100% ${light}%)`;
     ctx2d.beginPath();
     ctx2d.arc(x, y, DOT_PX/2, 0, Math.PI*2);
     ctx2d.fill();
-
-    x += GAP_PX;
-    i++;
   }
 
   rafId = requestAnimationFrame(draw);
+}
+
 }
 
 }
@@ -219,3 +223,9 @@ audio.addEventListener('error', () => {
 audio.addEventListener('stalled', ()=> showToast('Conexión lenta…'));
 audio.addEventListener('waiting', ()=> showToast('Conectando…'));
 audio.addEventListener('playing', ()=> showToast('Reproduciendo'));
+
+// Pause rendering when hidden to save battery
+document.addEventListener('visibilitychange', ()=>{
+  if (document.hidden){ cancelAnimationFrame(rafId); }
+  else { rafId = requestAnimationFrame(draw); }
+});
