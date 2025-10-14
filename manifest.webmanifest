@@ -1,7 +1,7 @@
 {
   "name": "Radio PWA",
   "short_name": "Radio",
-  "start_url": ".",
+  "start_url": "./index.html",
   "display": "standalone",
   "display_override": [
     "standalone"
@@ -28,5 +28,6 @@
       "sizes": "1242x2208",
       "form_factor": "narrow"
     }
-  ]
+  ],
+  "scope": "./"
 }
