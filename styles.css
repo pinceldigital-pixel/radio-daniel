@@ -28,10 +28,10 @@ footer { height: env(safe-area-inset-bottom); }
 .install-wrap { position: fixed; right: 16px; top: 16px; z-index: 40; }
 .install { background: rgba(255,255,255,.1); border:none; padding: 10px 14px; color:#e5e7eb; border-radius: 999px; font-weight: 600; letter-spacing:.02em; }
 .install:hover { background: rgba(255,255,255,.18); }
-.splash { position: fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#0b0f16; z-index:50; transition: opacity .4s ease; }
-.splash--hide { opacity:0; pointer-events:none; }
-.logo { width: 128px; height:128px; border-radius:28px; border: 10px solid rgba(255,255,255,.15); position:relative; }
-.logo::after { content:""; position:absolute; inset:22px; background:#fff; border-radius:18px; }
+.splashREMOVED { position: fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#0b0f16; z-index:50; transition: opacity .4s ease; }
+.splashREMOVED--hide { opacity:0; pointer-events:none; }
+.logoREMOVED { width: 128px; height:128px; border-radius:28px; border: 10px solid rgba(255,255,255,.15); position:relative; }
+.logoREMOVED::after { content:""; position:absolute; inset:22px; background:#fff; border-radius:18px; }
 
 /* ---- v2 fixes ---- */
 html, body { height: 100%; background-color: #0b0f16; }

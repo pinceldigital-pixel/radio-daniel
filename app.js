@@ -18,7 +18,7 @@ const nextBtn = document.getElementById('next');
 const playIcon = document.getElementById('playIcon');
 const pauseIcon = document.getElementById('pauseIcon');
 const installBtn = document.getElementById('installBtn');
-const splash = document.getElementById('splash');
+const splash = null;
 
 
 // --- Helpers ---
@@ -46,7 +46,7 @@ function canPlay(url){
 
 
 // Splash fade-out after load
-window.addEventListener('load', () => setTimeout(() => splash.classList.add('splash--hide'), 500));
+// splash removed
 
 // Install button (beforeinstallprompt)
 let deferredPrompt = null;
