@@ -116,42 +116,52 @@ const ctx2d = canvas.getContext('2d');
 let rafId;
 let idleT = 0;
 
+
 function draw(){
   const w = canvas.width = canvas.clientWidth * devicePixelRatio;
   const h = canvas.height = canvas.clientHeight * devicePixelRatio;
   ctx2d.clearRect(0,0,w,h);
 
-  // gradient
-  const grad = ctx2d.createLinearGradient(0,0,w,0);
-  grad.addColorStop(0, '#ff3e3e'); grad.addColorStop(0.17, '#ff8c00');
-  grad.addColorStop(0.34, '#ffd400'); grad.addColorStop(0.51, '#3be477');
-  grad.addColorStop(0.68, '#32b1ff'); grad.addColorStop(0.85, '#8a5cff');
-  grad.addColorStop(1, '#ff3ef7');
-  ctx2d.lineWidth = 2 * devicePixelRatio;
-  ctx2d.strokeStyle = grad;
-  ctx2d.beginPath();
+  const DOT_PX = 8 * devicePixelRatio;     // diámetro del punto
+  const GAP_PX = 10 * devicePixelRatio;    // separación entre puntos
 
-  if (analyser && playing) {
-    analyser.getByteTimeDomainData(dataArray);
-    for (let i=0;i<dataArray.length;i++){
-      const x = (i/(dataArray.length-1))*w;
-      const y = (dataArray[i]/255)*h;
-      if(i===0) ctx2d.moveTo(x,y); else ctx2d.lineTo(x,y);
-    }
-  } else {
-    // Idle sine/breathing animation
-    idleT += 0.02;
-    const A = h*0.18 * (0.75 + 0.25*Math.sin(idleT*0.8)); // amplitud respira
-    const baseline = h/2;
-    const freq = 2*Math.PI / (w*0.6);
-    for (let i=0;i<w;i++){
-      const x = i;
-      const y = baseline + Math.sin(i*freq + idleT) * A;
-      if(i===0) ctx2d.moveTo(x,y); else ctx2d.lineTo(x,y);
-    }
+  let array = null;
+  if (analyser && playing){
+    array = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(array);
   }
-  ctx2d.stroke();
+
+  // Recorremos el ancho y pintamos puntos
+  let x = 0, i = 0, t = (performance.now()/1000);
+  const baseline = h/2;
+
+  while (x < w){
+    let y;
+    if (array){
+      // map index to data array
+      const idx = Math.floor((x / w) * (array.length-1));
+      y = (array[idx] / 255) * h;
+    } else {
+      // idle sinusoidal "respira"
+      const A = h*0.18 * (0.75 + 0.25*Math.sin(t*0.8));
+      const freq = 2*Math.PI / (w*0.6);
+      y = baseline + Math.sin(x*freq + t) * A;
+    }
+
+    // color arcoíris según posición X, con brillo que pulsa suavemente
+    const hue = (x / w) * 360;
+    const light = 55 + 10*Math.sin(t*2 + x*0.01);
+    ctx2d.fillStyle = `hsl(${hue} 100% ${light}%)`;
+    ctx2d.beginPath();
+    ctx2d.arc(x, y, DOT_PX/2, 0, Math.PI*2);
+    ctx2d.fill();
+
+    x += GAP_PX;
+    i++;
+  }
 
   rafId = requestAnimationFrame(draw);
+}
+
 }
 rafId = requestAnimationFrame(draw);
