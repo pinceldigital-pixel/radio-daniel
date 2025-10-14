@@ -87,16 +87,40 @@ function setupAnalyser(){
     return false;
   }
 }
+
 function setStation(i){
   index = (i + STATIONS.length) % STATIONS.length;
   const s = STATIONS[index];
   numberEl.textContent = s.number;
   nameEl.textContent = s.name;
-  audio.src = s.url + (s.url.includes('?')?'&':'?') + 't=' + Date.now();
 
-  if (!canPlay(s.url)) {
-    showToast('Atención: códec no soportado en este navegador');
+  const codec = guessCodec(s.url);
+  // If HLS and supported via hls.js, use it
+  if (codec === 'hls' && window.Hls && window.Hls.isSupported()){
+    if (window._hls) { try { window._hls.destroy(); } catch{} }
+    window._hls = new Hls({maxBufferLength: 10});
+    window._hls.loadSource(s.url);
+    window._hls.attachMedia(audio);
+    window._hls.on(Hls.Events.ERROR, (event, data) => {
+      console.warn('HLS error', data);
+      showToast('Error HLS: ' + (data && data.type || 'desconocido'));
+    });
+  } else {
+    // direct source (MP3/AAC or Safari HLS)
+    audio.src = s.url + (s.url.includes('?')?'&':'?') + 't=' + Date.now();
+    if (codec === 'hls' && audio.canPlayType('application/vnd.apple.mpegurl') === ''){
+      showToast('Este navegador no soporta HLS nativo. Probando directo…');
+    }
   }
+
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: s.name, artist: s.number, album: 'Radio PWA',
+      artwork: [{ src: 'icon-192.png', sizes: '192x192', type: 'image/png' }]
+    });
+  }
+}
+
 
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -119,18 +143,15 @@ function updatePlayUI(){
 }
 async function togglePlay(){
   if (!playing){
-    if (!canPlay(audio.src)) {
-      showToast('Este navegador no soporta el códec de esta estación (probá otra)');
-    }
     try {
-      const ok = await audio.play();
+      const playPromise = audio.play();
+      if (playPromise) await playPromise;
       playing = true;
-      // Intentar conectar el analyser luego de empezar (evita errores en autoplay)
       const okAnalyser = setupAnalyser();
       if (okAnalyser && ctx.state === 'suspended') await ctx.resume();
     } catch(e){
       console.warn('No se pudo reproducir:', e);
-      showToast('No se pudo reproducir la estación. Probá otra o revisá CORS.');
+      showToast(e && e.name === 'NotAllowedError' ? 'Tocá Play nuevamente para iniciar el audio' : 'No se pudo reproducir la estación');
     }
   } else { audio.pause(); playing = false; }
   updatePlayUI();
@@ -161,14 +182,15 @@ let idleT = 0;
 
 
 
+
 function draw(){
   const w = canvas.width = canvas.clientWidth * devicePixelRatio;
   const h = canvas.height = canvas.clientHeight * devicePixelRatio;
   ctx2d.clearRect(0,0,w,h);
 
   const DPR = Math.min(devicePixelRatio || 1, 3);
-  const MAX_DOTS = 140;                          // límite para móviles
-  const DOT_PX = Math.max(5 * DPR, 4);           // tamaño del punto
+  const MAX_DOTS = 140;
+  const DOT_PX = Math.max(5 * DPR, 4);
   const baseline = h/2;
   const t = performance.now()/1000;
 
@@ -178,18 +200,7 @@ function draw(){
     analyser.getByteTimeDomainData(array);
   }
 
-  // Calcular paso de muestreo para no dibujar más de MAX_DOTS puntos
   const step = Math.max(1, Math.floor((w / MAX_DOTS)));
-  const grad = ctx2d.createLinearGradient(0,0,w,0);
-  grad.addColorStop(0, '#ff3e3e');
-  grad.addColorStop(0.17, '#ff8c00');
-  grad.addColorStop(0.34, '#ffd400');
-  grad.addColorStop(0.51, '#3be477');
-  grad.addColorStop(0.68, '#32b1ff');
-  grad.addColorStop(0.85, '#8a5cff');
-  grad.addColorStop(1, '#ff3ef7');
-  ctx2d.fillStyle = grad;
-
   for (let x = 0; x < w; x += step){
     let y;
     if (array){
@@ -200,12 +211,16 @@ function draw(){
       const freq = 2*Math.PI / (w*0.6);
       y = baseline + Math.sin(x*freq + t) * A;
     }
+    const hue = (x / w) * 360;
+    const light = 55 + 10*Math.sin(t*2 + x*0.01);
+    ctx2d.fillStyle = `hsl(${hue} 100% ${light}%)`;
     ctx2d.beginPath();
     ctx2d.arc(x, y, DOT_PX/2, 0, Math.PI*2);
     ctx2d.fill();
   }
-
   rafId = requestAnimationFrame(draw);
+}
+
 }
 
 }
