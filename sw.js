@@ -1,11 +1,11 @@
 self.addEventListener('install', (e) => {
   self.skipWaiting();
-  e.waitUntil(caches.open('radio-pro-v12').then(c => c.addAll([
+  e.waitUntil(caches.open('radio-pro-v13b').then(c => c.addAll([
     './','./index.html','./styles.css','./app.js','./manifest.json','./icon-192.png','./icon-512.png'
   ])));
 });
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k!=='radio-pro-v12' && caches.delete(k)))));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k!=='radio-pro-v13b' && caches.delete(k)))));
   self.clients.claim();
 });
 self.addEventListener('fetch', (e) => {
