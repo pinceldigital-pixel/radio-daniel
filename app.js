@@ -1,152 +1,164 @@
 
-const STATIONS = [
-  { number: "97.9", name: "NOW", url: "https://ipanel.instream.audio:7002/stream" },
-  { number: "100.7", name: "BLUE 100.7", url: "https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac" },
-  { number: "102.3", name: "ASPEN 102.3", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3" },
-  { number: "104.9", name: "LN+ 104.9", url: "https://stream.radio.co/s2ed3bec0a/listen" }
+// --- Estado básico y estaciones de ejemplo (reemplaza URLs por las tuyas) ---
+const stations = [
+  { freq: '98.7', name: 'RADIO FUTURA', url: 'https://stream.live.vc.bbcmedia.co.uk/bbc_radio_fourlw_online_nonuk' },
+  { freq: '101.3', name: 'ELECTRO FM', url: 'https://stream.live.vc.bbcmedia.co.uk/bbc_radio_one' },
+  { freq: '87.5', name: 'CLÁSICA', url: 'https://stream.live.vc.bbcmedia.co.uk/bbc_radio_three' }
 ];
+let current = 0;
+let isPlaying = false;
 
-let index=0, playing=false;
-const audio=document.getElementById('audio');
-const numberEl=document.getElementById('number');
-const nameEl=document.getElementById('name');
-const btnPlay=document.getElementById('play');
-const btnPrev=document.getElementById('prev');
-const btnNext=document.getElementById('next');
-const btnPower=document.getElementById('power');
-const playIcon=document.getElementById('playIcon');
-const pauseIcon=document.getElementById('pauseIcon');
-const toast=document.getElementById('toast');
+// Elements
+const audio = document.getElementById('audio');
+const bigFreq = document.getElementById('bigFreq');
+const stationName = document.getElementById('stationName');
+const subFreq = document.getElementById('subFreq');
+const prev = document.getElementById('prev');
+const next = document.getElementById('next');
+const toggle = document.getElementById('toggle');
+const toggleIcon = document.getElementById('toggleIcon');
+const stopBtn = document.getElementById('stop');
+const rewBtn = document.getElementById('rew');
+const ffBtn = document.getElementById('ff');
+const muteBtn = document.getElementById('mute');
+const volume = document.getElementById('volume');
+const air = document.getElementById('air');
+const airDot = document.getElementById('airDot');
+const airText = document.getElementById('airText');
+const sleepBtn = document.getElementById('sleepBtn');
+const sleepLabel = document.getElementById('sleepLabel');
 
-// Install PWA
-let deferredPrompt=null; const installBtn=document.getElementById('installBtn');
-window.addEventListener('beforeinstallprompt',(e)=>{ e.preventDefault(); deferredPrompt=e; installBtn.style.display='block'; });
-installBtn.addEventListener('click', async ()=>{ if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; installBtn.style.display='none'; });
-
-// Toast
-function showToast(msg,ms=1800){ toast.textContent=msg; toast.style.display='block'; clearTimeout(showToast._id); showToast._id=setTimeout(()=>toast.style.display='none',ms); }
-
-// Media Session
-if('mediaSession' in navigator){
-  navigator.mediaSession.setActionHandler('play', ()=>{ if(!playing) togglePlay(); });
-  navigator.mediaSession.setActionHandler('pause', ()=>{ if(playing) togglePlay(); });
-  navigator.mediaSession.setActionHandler('previoustrack', ()=> prev());
-  navigator.mediaSession.setActionHandler('nexttrack', ()=> next());
-}
-
-// Audio analyser
-let ctx, analyser;
-function setupAnalyser(){
-  try{
-    if(ctx) return true;
-    ctx = new (window.AudioContext||window.webkitAudioContext)();
-    const source = ctx.createMediaElementSource(audio);
-    analyser = ctx.createAnalyser(); analyser.fftSize=512;
-    source.connect(analyser); analyser.connect(ctx.destination);
-    return true;
-  }catch(e){ console.warn('Analyser no dispo', e); return false; }
-}
-
-// Station management
+// Init UI
 function setStation(i){
-  index = (i+STATIONS.length)%STATIONS.length;
-  const s=STATIONS[index]; numberEl.textContent=s.number; nameEl.textContent=s.name;
-  if(window._hls && window._hls.destroy){ try{ window._hls.destroy(); }catch(e){} window._hls=null; }
-  const isHls = s.url.toLowerCase().includes('.m3u8');
-  if(isHls && window.Hls && window.Hls.isSupported()){
-    window._hls = new Hls({maxBufferLength:10}); window._hls.loadSource(s.url); window._hls.attachMedia(audio);
-  } else {
-    audio.src = s.url + (s.url.includes('?')?'&':'?') + 't=' + Date.now();
-  }
-  if('mediaSession' in navigator){
-    navigator.mediaSession.metadata=new MediaMetadata({title:s.name, artist:s.number, album:'Radio PWA Pro'});
-  }
+  current = (i + stations.length) % stations.length;
+  const s = stations[current];
+  bigFreq.textContent = s.freq;
+  stationName.textContent = s.name;
+  if(audio.src !== s.url){ audio.src = s.url; }
 }
-
-async function togglePlay(){
-  if(!playing){
-    try{ const p=audio.play(); if(p) await p; playing=true; playIcon.style.display='none'; pauseIcon.style.display='block';
-      const ok=setupAnalyser(); if(ok && ctx.state==='suspended') await ctx.resume();
-    }catch(e){ showToast('Tocá Play de nuevo'); }
-  } else { audio.pause(); playing=false; playIcon.style.display='block'; pauseIcon.style.display='none'; }
-}
-function next(){ setStation(index+1); if(playing){ try{ audio.pause(); audio.load(); audio.play(); }catch(e){} } }
-function prev(){ setStation(index-1); if(playing){ try{ audio.pause(); audio.load(); audio.play(); }catch(e){} } }
-btnPlay.addEventListener('click', togglePlay); btnNext.addEventListener('click', next); btnPrev.addEventListener('click', prev);
-
-// ---- Visualizador: línea "neón" multicapa + respiración suave cuando no hay audio ----
-const canvas=document.getElementById('visualizer'); const ctx2d=canvas.getContext('2d');
-let rafId;
-function draw(){
-  const w=canvas.width=canvas.clientWidth*devicePixelRatio;
-  const h=canvas.height=canvas.clientHeight*devicePixelRatio;
-  ctx2d.clearRect(0,0,w,h);
-  const DPR=Math.min(devicePixelRatio||1,3), t=performance.now()/1000, haveData=analyser && playing;
-  let timeData=null; if(haveData){ timeData=new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(timeData); }
-  const baseline=h/2;
-
-  // respiración suave (0..1) — lenta
-  const breath = (Math.sin(t*0.9)*0.5+0.5);  // lento y suave
-  const layers=[
-    {blur:16*DPR, width:3*DPR, alpha:.30, shadow:'#6ae3ff'},
-    {blur:8*DPR,  width:2*DPR, alpha:.65, shadow:'#9f6bff'},
-    {blur:0,      width:1.6*DPR, alpha:1, shadow:'#ffffff'}
-  ];
-  const grad=ctx2d.createLinearGradient(0,0,w,0);
-  grad.addColorStop(0,'#ff3e3e'); grad.addColorStop(0.17,'#ff8c00'); grad.addColorStop(0.34,'#ffd400');
-  grad.addColorStop(0.51,'#3be477'); grad.addColorStop(0.68,'#32b1ff'); grad.addColorStop(0.85,'#8a5cff'); grad.addColorStop(1,'#ff3ef7');
-
-  for(const L of layers){
-    ctx2d.save();
-    ctx2d.globalCompositeOperation='lighter';
-    ctx2d.strokeStyle=grad; ctx2d.lineWidth=L.width; ctx2d.shadowBlur=L.blur; ctx2d.shadowColor=L.shadow; ctx2d.globalAlpha=L.alpha;
-    ctx2d.beginPath();
-    const N=haveData? timeData.length : Math.floor(w/4);
-    for(let i=0;i<N;i++){
-      const x= haveData ? (i/(N-1))*w : i*4;
-      let mod;
-      if(haveData){
-        mod = ((timeData[i]/255)-0.5)*2; // -1..1
-      } else {
-        // respiración: onda senoidal muy amortiguada
-        mod = Math.sin(x*0.008 + t) * (0.18 * breath);  // amplitud pequeña
-      }
-      const y = baseline + mod * (h*0.18);
-      if(i===0) ctx2d.moveTo(x,y); else ctx2d.lineTo(x,y);
-    }
-    ctx2d.stroke();
-    ctx2d.restore();
-  }
-  rafId=requestAnimationFrame(draw);
-}
-rafId=requestAnimationFrame(draw);
-document.addEventListener('visibilitychange',()=>{ if(document.hidden){ cancelAnimationFrame(rafId);} else { rafId=requestAnimationFrame(draw);} });
-
-// ---- Temporizador 30m con botón power (sin números visibles) ----
-let timerId=null;
-function startSleep30(){
-  clearSleep(); btnPower.classList.add('power-on');
-  const end = Date.now() + 30*60*1000;
-  function tick(){ if(Date.now()>=end){ clearSleep(); stopPlayback(); showToast('Apagado'); return; } timerId=setTimeout(tick,1000); }
-  tick();
-}
-function clearSleep(){ if(timerId) clearTimeout(timerId); timerId=null; btnPower.classList.remove('power-on'); }
-function stopPlayback(){ try{ audio.pause(); }catch(e){} playing=false; playIcon.style.display='block'; pauseIcon.style.display='none'; }
-btnPower.addEventListener('click', ()=>{ if(timerId){ clearSleep(); showToast('Timer cancelado'); } else { startSleep30(); showToast('Apaga en 30 min'); } });
-
-// Init
 setStation(0);
-audio.addEventListener('waiting', ()=>showToast('Conectando…'));
-audio.addEventListener('playing', ()=>showToast('Reproduciendo'));
-audio.addEventListener('stalled', ()=>showToast('Conexión lenta…'));
-audio.addEventListener('error', ()=>showToast('Error de reproducción'));
 
-// Desbloqueo general de audio en la 1ª interacción (sin overlay)
-let _resumedOnce = false;
-function resumeAudioCtxOnce(){
-  if (_resumedOnce) return;
-  _resumedOnce = true;
-  try{ if (audioCtx && audioCtx.state === "suspended") audioCtx.resume(); }catch(e){}
+// ON AIR / OFF AIR
+function updateAir(){
+  if(isPlaying){
+    air.classList.add('on');
+    airText.textContent = 'ON AIR';
+  } else {
+    air.classList.remove('on');
+    airText.textContent = 'OFF AIR';
+  }
 }
-window.addEventListener("pointerdown", resumeAudioCtxOnce, { once:true });
-window.addEventListener("keydown", resumeAudioCtxOnce, { once:true });
+
+// Play/Pause
+async function play(){
+  try{
+    await audio.play();
+    isPlaying = true;
+    toggleIcon.setAttribute('d','M8 5v14l11-7z'.replace('8 5v14l11-7z','M7 5h4v14H7zM13 5h4v14h-4z')); // cambia a "pause"
+    subFreq.hidden = false;
+    subFreq.textContent = 'En vivo';
+    updateAir();
+  }catch(e){
+    console.warn(e);
+  }
+}
+function pause(){
+  audio.pause();
+  isPlaying = false;
+  toggleIcon.setAttribute('d','M8 5v14l11-7z'); // play
+  subFreq.hidden = true;
+  updateAir();
+}
+
+toggle.addEventListener('click', ()=> isPlaying ? pause() : play());
+prev.addEventListener('click', ()=>{ setStation(current-1); if(isPlaying) play(); });
+next.addEventListener('click', ()=>{ setStation(current+1); if(isPlaying) play(); });
+stopBtn.addEventListener('click', ()=>{ pause(); audio.currentTime = 0; });
+rewBtn.addEventListener('click', ()=>{ audio.currentTime = Math.max(0, audio.currentTime - 15); });
+ffBtn.addEventListener('click', ()=>{ audio.currentTime += 15; });
+muteBtn.addEventListener('click', ()=>{ audio.muted = !audio.muted; });
+volume.addEventListener('input', ()=>{ audio.volume = Number(volume.value); });
+
+audio.addEventListener('playing', ()=>{ isPlaying = true; updateAir(); });
+audio.addEventListener('pause',   ()=>{ isPlaying = false; updateAir(); });
+
+// --- Temporizador 30' (sleep) ---
+let sleepLeft = 0;
+let sleepTimer = null;
+function format(mmss){
+  const m = Math.floor(mmss/60).toString().padStart(2,'0');
+  const s = Math.floor(mmss%60).toString().padStart(2,'0');
+  return `${m}:${s}`;
+}
+function startSleep(minutes=30){
+  sleepLeft = minutes*60;
+  sleepLabel.textContent = format(sleepLeft);
+  if(sleepTimer) clearInterval(sleepTimer);
+  sleepTimer = setInterval(()=>{
+    sleepLeft--;
+    sleepLabel.textContent = format(sleepLeft);
+    if(sleepLeft<=0){
+      clearInterval(sleepTimer);
+      sleepTimer = null;
+      pause();
+      sleepLabel.textContent = '30:00';
+    }
+  },1000);
+}
+sleepBtn.addEventListener('click', ()=>{
+  if(sleepTimer){
+    clearInterval(sleepTimer);
+    sleepTimer = null;
+    sleepLabel.textContent = '30:00';
+  }else{
+    startSleep(30);
+  }
+});
+
+// --- Ondas nuevas (sin WebAudio, animación generativa) ---
+const canvas = document.getElementById('wave');
+const ctx = canvas.getContext('2d');
+let W, H, t = 0;
+function resize(){
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  W = canvas.clientWidth; H = canvas.clientHeight;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+resize(); addEventListener('resize', resize);
+
+function draw(){
+  t += 0.015;
+  ctx.clearRect(0,0,W,H);
+
+  // fondo sutil
+  ctx.globalAlpha = 0.6;
+  const grad = ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0,'rgba(255,255,255,0.05)');
+  grad.addColorStop(1,'rgba(255,255,255,0.00)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,W,H);
+
+  // múltiples ondas "neón"
+  const lines = 4;
+  for(let i=0;i<lines;i++){
+    const amp = 18 + i*6;
+    const speed = 0.6 + i*0.12;
+    const yBase = H*0.5;
+    ctx.beginPath();
+    for(let x=0; x<=W; x+=2){
+      const y = yBase + Math.sin((x*0.018)+(t*speed))*amp * Math.cos((x*0.004)-(t*0.9));
+      if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.lineWidth = 2 + i*0.6;
+    // brillo alterna según ON AIR
+    const alpha = isPlaying ? 0.9 : 0.35;
+    ctx.strokeStyle = `rgba(255,154,31,${alpha - i*0.12})`; // usa el acento, pero en degradé
+    ctx.shadowColor = 'rgba(255,154,31,0.3)';
+    ctx.shadowBlur = isPlaying ? 14 : 4;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+  requestAnimationFrame(draw);
+}
+draw();

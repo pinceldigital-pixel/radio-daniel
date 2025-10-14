@@ -1,64 +1,77 @@
+
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <title>Radio PWA Pro</title>
-  <meta name="theme-color" content="#000000">
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" href="./icon-192.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#0d1316" />
+  <title>AI Pixel Radio · Dark</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <button id="installBtn" class="install" style="display:none">Instalar</button>
   <div class="app">
-  <header class="top">
-    <div class="air off">
-      <span class="dot" aria-hidden="true"></span>
-      <span id="airText" class="air-text">OFF AIR</span>
-    </div>
-    <div id="number" class="number">97.9</div>
-    <div id="name" class="name">NOW</div>
-  </header>
+    <main class="card">
+      <!-- Barra superior con estado ON/OFF AIR y temporizador de 30' -->
+      <header class="top">
+        <div class="air" id="air">
+          <span class="air-dot" id="airDot" aria-hidden="true"></span>
+          <span class="air-text" id="airText" aria-live="polite">OFF AIR</span>
+        </div>
 
-  <main class="waves-mid">
-    <canvas id="freqBg"></canvas>
-  </main>
+        <button class="sleep" id="sleepBtn" aria-label="Temporizador 30 minutos">
+          <!-- ícono de luna (SVG) -->
+          <svg viewBox="0 0 24 24" class="moon" aria-hidden="true">
+            <path d="M21.4 14.9A9.5 9.5 0 0 1 9.1 2.6a.9.9 0 0 0-1.2 1.2 7.7 7.7 0 1 0 9.3 9.3.9.9 0 0 0 1.2-1.2Z"/>
+          </svg>
+          <span id="sleepLabel">30:00</span>
+        </button>
 
-  <nav class="controls">
-      <div class="pill">
-        <button id="prev" class="btn" aria-label="Anterior" title="Anterior">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="11 19 2 12 11 5 11 19"></polygon><polygon points="22 19 13 12 22 5 22 19"></polygon>
-          </svg>
-        </button>
-        <button id="play" class="btn btn--main" aria-label="Play/Pausa" title="Play/Pausa">
-          <svg id="playIcon" width="34" height="34" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
-            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-          </svg>
-          <svg id="pauseIcon" width="34" height="34" viewBox="0 0 24 24" fill="currentColor" style="display:none">
-            <rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>
-          </svg>
-        </button>
-        <button id="next" class="btn" aria-label="Siguiente" title="Siguiente">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="13 19 22 12 13 5 13 19"></polygon><polygon points="2 19 11 12 2 5 2 19"></polygon>
-          </svg>
-        </button>
-        <button id="power" class="btn" aria-label="Apagar en 30min" title="Apagar en 30min">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2v10"></path><path d="M6.2 6.2a8 8 0 1 0 11.6 0"></path>
-          </svg>
-        </button>
+        <div class="subfreq" id="subFreq" hidden>Sonando...</div>
+        <div class="bigfreq" id="bigFreq">98.7</div>
+        <div class="station" id="stationName">RADIO FUTURA</div>
+      </header>
+
+      <!-- Ondas con nuevo estilo -->
+      <div class="waveWrap">
+        <canvas id="wave"></canvas>
       </div>
-    </nav>
-    <div id="toast" class="toast" style="display:none"></div>
+
+      <!-- Pastilla de controles completa -->
+      <div class="controls-pill" role="group" aria-label="Controles de reproducción">
+        <button class="btn" id="prev" aria-label="Anterior" title="Anterior">
+          <svg viewBox="0 0 24 24"><path d="M7 6v12H5V6h2zm12 12l-9-6 9-6v12z"/></svg>
+        </button>
+        <button class="btn" id="rew" aria-label="Rebobinar 15s" title="-15s">
+          <svg viewBox="0 0 24 24"><path d="M12 8V5l-5 4 5 4V10c3.3 0 6 2.7 6 6h-2a4 4 0 0 0-4-4h0z"/></svg>
+        </button>
+        <button class="btn primary play" id="toggle" aria-label="Play/Pause" title="Play/Pause">
+          <svg viewBox="0 0 24 24"><path id="toggleIcon" d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="btn" id="ff" aria-label="Avanzar 15s" title="+15s">
+          <svg viewBox="0 0 24 24"><path d="M12 14v3l5-4-5-4v3a6 6 0 0 0-6 6H4a8 8 0 0 1 8-8h0z"/></svg>
+        </button>
+        <button class="btn" id="next" aria-label="Siguiente" title="Siguiente">
+          <svg viewBox="0 0 24 24"><path d="M17 6v12h2V6h-2zM5 18l9-6-9-6v12z"/></svg>
+        </button>
+        <button class="btn" id="stop" aria-label="Detener" title="Stop">
+          <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+        </button>
+        <button class="btn" id="mute" aria-label="Silencio" title="Silencio">
+          <svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2l3.5 3.5-1.5 1.5L15 13.5 11.5 17 10 15.5 13.5 12 10 8.5 11.5 7 15 10.5 18.5 7 20 8.5 16.5 12z"/></svg>
+        </button>
+        <input type="range" id="volume" class="vol" min="0" max="1" step="0.01" value="1" aria-label="Volumen">
+      </div>
+    </main>
   </div>
-  <audio id="audio" crossorigin="anonymous"></audio>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <script src="./app.js"></script>
-  <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');</script>
+
+  <audio id="audio" preload="none" crossorigin="anonymous"></audio>
+  <script src="app.js"></script>
+  <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'))}</script>
 </body>
 </html>
