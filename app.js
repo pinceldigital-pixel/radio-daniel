@@ -152,3 +152,15 @@ function unlockAndPlay(){
 tapToStart?.addEventListener("click", unlockAndPlay);
 window.addEventListener("pointerdown", unlockAndPlay, { once:false });
 window.addEventListener("keydown", unlockAndPlay, { once:false });
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  attemptAutoplay?.();
+});
+
+let _autoplayRetried = false;
+audio.addEventListener("canplay", ()=>{
+  if (!_autoplayRetried && !playing){
+    _autoplayRetried = true;
+    attemptAutoplay?.();
+  }
+},{once:false});
