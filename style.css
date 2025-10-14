@@ -1,0 +1,159 @@
+/* --- Configuración Base --- */
+:root {
+  --station-color: #ff3b30; /* Color de ejemplo, actualízalo con JS */
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #000;
+  color: #e5e7eb;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* --- Fondo --- */
+#bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  /* Aquí va el estilo de tu canvas de ondas */
+}
+
+/* --- Estructura Principal --- */
+.app {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* --- Dial Radial --- */
+.dial-radial-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+  flex-shrink: 0;
+}
+
+.dial-radial {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #1f2937, #111827);
+  border: 4px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 25px rgba(0,0,0,0.5), inset 0 0 15px rgba(0,0,0,0.7);
+  position: relative;
+}
+
+.needle-radial {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  width: 3px;
+  height: 45%;
+  background-color: var(--station-color);
+  border-radius: 2px;
+  transform-origin: bottom center;
+  transform: translateX(-50%) rotate(0deg);
+  transition: transform 0.8s cubic-bezier(0.2, 1, 0.3, 1); /* Animación suave */
+  box-shadow: 0 0 8px var(--station-color);
+}
+
+/* --- Display Central --- */
+.center {
+  text-align: center;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.air { display: flex; justify-content: center; align-items: center; gap: 8px; }
+.air-text { font-weight: bold; }
+.dot { width: 10px; height: 10px; background-color: var(--station-color); border-radius: 50%; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.number {
+  font-size: 5.5rem;
+  font-weight: 900;
+  line-height: 1;
+  margin-top: 10px;
+  transition: color 0.5s ease;
+}
+
+.name {
+  font-size: 1.5rem;
+  font-weight: 400;
+  opacity: 0.8;
+  margin-top: 5px;
+  transition: color 0.5s ease;
+}
+
+/* --- Controles --- */
+.controls {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+  flex-shrink: 0;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background-color: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50px;
+}
+
+.btn {
+  background: none;
+  border: none;
+  color: #e5e7eb;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+}
+.btn:hover {
+  transform: scale(1.1);
+  color: #fff;
+  background-color: rgba(255,255,255,0.1);
+}
+.btn:active {
+  transform: scale(0.95);
+}
+.btn--main {
+  background-color: var(--station-color);
+  color: #fff;
+  width: 60px;
+  height: 60px;
+}
+.btn--main:hover {
+  filter: brightness(1.2);
+  color: #fff;
+}
+
+/* --- Botón Sleep --- */
+.sleep-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: #e5e7eb;
+    cursor: pointer;
+    opacity: 0.7;
+}
