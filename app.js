@@ -24,7 +24,7 @@ window.addEventListener('beforeinstallprompt',(e)=>{ e.preventDefault(); deferre
 installBtn.addEventListener('click', async ()=>{ if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; installBtn.style.display='none'; });
 
 // Toast
-function showToast(msg,ms=2200){ toast.textContent=msg; toast.style.display='block'; clearTimeout(showToast._id); showToast._id=setTimeout(()=>toast.style.display='none',ms); }
+function showToast(msg,ms=1800){ toast.textContent=msg; toast.style.display='block'; clearTimeout(showToast._id); showToast._id=setTimeout(()=>toast.style.display='none',ms); }
 
 // Media Session
 if('mediaSession' in navigator){
@@ -74,7 +74,7 @@ function next(){ setStation(index+1); if(playing){ try{ audio.pause(); audio.loa
 function prev(){ setStation(index-1); if(playing){ try{ audio.pause(); audio.load(); audio.play(); }catch(e){} } }
 btnPlay.addEventListener('click', togglePlay); btnNext.addEventListener('click', next); btnPrev.addEventListener('click', prev);
 
-// ---- Visualizador: SOLO línea ----
+// ---- Visualizador: línea "neón" multicapa + respiración suave cuando no hay audio ----
 const canvas=document.getElementById('visualizer'); const ctx2d=canvas.getContext('2d');
 let rafId;
 function draw(){
@@ -82,38 +82,57 @@ function draw(){
   const h=canvas.height=canvas.clientHeight*devicePixelRatio;
   ctx2d.clearRect(0,0,w,h);
   const DPR=Math.min(devicePixelRatio||1,3), t=performance.now()/1000, haveData=analyser && playing;
-  let timeData=null;
-  if(haveData){ timeData=new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(timeData); }
-  const baseline=h/2; const A=h*0.18*(0.75+0.25*Math.sin(t*0.8));
-  ctx2d.lineWidth=2*DPR; const grad=ctx2d.createLinearGradient(0,0,w,0);
+  let timeData=null; if(haveData){ timeData=new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(timeData); }
+  const baseline=h/2;
+
+  // respiración suave (0..1) — lenta
+  const breath = (Math.sin(t*0.9)*0.5+0.5);  // lento y suave
+  const layers=[
+    {blur:16*DPR, width:3*DPR, alpha:.30, shadow:'#6ae3ff'},
+    {blur:8*DPR,  width:2*DPR, alpha:.65, shadow:'#9f6bff'},
+    {blur:0,      width:1.6*DPR, alpha:1, shadow:'#ffffff'}
+  ];
+  const grad=ctx2d.createLinearGradient(0,0,w,0);
   grad.addColorStop(0,'#ff3e3e'); grad.addColorStop(0.17,'#ff8c00'); grad.addColorStop(0.34,'#ffd400');
   grad.addColorStop(0.51,'#3be477'); grad.addColorStop(0.68,'#32b1ff'); grad.addColorStop(0.85,'#8a5cff'); grad.addColorStop(1,'#ff3ef7');
-  ctx2d.strokeStyle=grad; ctx2d.beginPath();
-  const N=haveData? timeData.length : Math.floor(w/3);
-  for(let i=0;i<N;i++){ const x= haveData ? (i/(N-1))*w : i*3;
-    const y= haveData ? (timeData[i]/255)*h : (baseline+Math.sin(x*0.01+t)*A);
-    if(i===0) ctx2d.moveTo(x,y); else ctx2d.lineTo(x,y);
-  } ctx2d.stroke();
+
+  for(const L of layers){
+    ctx2d.save();
+    ctx2d.globalCompositeOperation='lighter';
+    ctx2d.strokeStyle=grad; ctx2d.lineWidth=L.width; ctx2d.shadowBlur=L.blur; ctx2d.shadowColor=L.shadow; ctx2d.globalAlpha=L.alpha;
+    ctx2d.beginPath();
+    const N=haveData? timeData.length : Math.floor(w/4);
+    for(let i=0;i<N;i++){
+      const x= haveData ? (i/(N-1))*w : i*4;
+      let mod;
+      if(haveData){
+        mod = ((timeData[i]/255)-0.5)*2; // -1..1
+      } else {
+        // respiración: onda senoidal muy amortiguada
+        mod = Math.sin(x*0.008 + t) * (0.18 * breath);  // amplitud pequeña
+      }
+      const y = baseline + mod * (h*0.18);
+      if(i===0) ctx2d.moveTo(x,y); else ctx2d.lineTo(x,y);
+    }
+    ctx2d.stroke();
+    ctx2d.restore();
+  }
   rafId=requestAnimationFrame(draw);
 }
 rafId=requestAnimationFrame(draw);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden){ cancelAnimationFrame(rafId);} else { rafId=requestAnimationFrame(draw);} });
 
-// ---- Temporizador: botón power = 30 min por defecto ----
-let timerId=null, timerEndsAt=0;
-const lblTimerLeft=document.getElementById('timer-left');
-function startSleep(minutes){
-  clearSleep(); const ms=minutes*60*1000; timerEndsAt=Date.now()+ms;
-  function tick(){ if(!timerEndsAt){ lblTimerLeft.textContent=''; return; }
-    const left=Math.max(0,timerEndsAt-Date.now()); const m=Math.floor(left/60000), s=Math.floor((left%60000)/1000);
-    lblTimerLeft.textContent=`${m}:${String(s).padStart(2,'0')}`;
-    if(left<=0){ clearSleep(); stopPlayback(); showToast('Temporizador: apagado'); return; }
-    timerId=setTimeout(tick,1000);
-  } tick();
+// ---- Temporizador 30m con botón power (sin números visibles) ----
+let timerId=null;
+function startSleep30(){
+  clearSleep(); btnPower.classList.add('power-on');
+  const end = Date.now() + 30*60*1000;
+  function tick(){ if(Date.now()>=end){ clearSleep(); stopPlayback(); showToast('Apagado'); return; } timerId=setTimeout(tick,1000); }
+  tick();
 }
-function clearSleep(){ if(timerId) clearTimeout(timerId); timerId=null; timerEndsAt=0; lblTimerLeft.textContent=''; }
+function clearSleep(){ if(timerId) clearTimeout(timerId); timerId=null; btnPower.classList.remove('power-on'); }
 function stopPlayback(){ try{ audio.pause(); }catch(e){} playing=false; playIcon.style.display='block'; pauseIcon.style.display='none'; }
-btnPower.addEventListener('click', ()=>{ startSleep(30); showToast('Apagado en 30 min'); });
+btnPower.addEventListener('click', ()=>{ if(timerId){ clearSleep(); showToast('Timer cancelado'); } else { startSleep30(); showToast('Apaga en 30 min'); } });
 
 // Init
 setStation(0);
