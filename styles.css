@@ -1,37 +1,30 @@
+:root{--station-color:#e5e7eb}
 *{box-sizing:border-box}html,body{height:100%}body{margin:0;background:#000;color:#e5e7eb;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto}
 .app{min-height:100svh;min-height:100dvh;display:flex;flex-direction:column;align-items:center}
-.header{text-align:center;padding:28px 16px 8px;user-select:none;position:relative}
+.header{text-align:center;padding:28px 16px 8px;user-select:none}
 .number{font-weight:900;line-height:1;text-shadow:0 6px 18px rgba(0,0,0,.6);font-size:clamp(56px,12vw,96px)}
 .name{margin-top:6px;font-size:clamp(16px,3.5vw,22px);opacity:.9;letter-spacing:.22em;font-weight:700}
 .wave-wrap{flex:1;display:flex;align-items:center;width:100%}
-/* ondas más altas (más área visual) */
-.wave{height:60svh;height:60dvh;width:100%;position:relative;overflow:hidden;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06);background:#000}
+.wave{height:50svh;height:50dvh;width:100%;position:relative;overflow:hidden;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06);background:#000}
 .wave>canvas{width:100%!important;height:100%!important;display:block}
-.controls{display:flex;justify-content:center;padding:24px 0 8px;width:100%;z-index:40;position:relative}
+.controls{display:flex;justify-content:center;padding:24px 0 8px;width:100%}
 .pill{display:flex;gap:18px;align-items:center;justify-content:center;width:100%;max-width:480px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:9999px;padding:10px}
 .btn{border:none;outline:none;background:transparent;color:#e5e7eb;border-radius:9999px;padding:12px;cursor:pointer;transition:transform .08s ease, background .2s ease}
 .btn:hover{background:rgba(255,255,255,.08)}.btn:active{transform:scale(.92)}
 .btn--main{background:#fff;color:#111827;padding:14px 16px}
 .btn--main:hover{background:#f7f7f7}
+.power-on{color:#ff5a5a}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,.7);color:#fff;padding:10px 14px;border-radius:999px;font-size:14px;z-index:60;pointer-events:none}
 .install{position:fixed;right:12px;top:12px;background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:999px;padding:8px 12px}
 .install:hover{background:rgba(255,255,255,.18)}
-
-/* Botón temporizador (arriba derecha) */
-.sleep-btn{position:fixed;right:14px;top:14px;border:none;background:rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:8px;z-index:70;cursor:pointer;transition:background .2s ease, transform .08s ease}
-.sleep-btn:hover{background:rgba(255,255,255,.18)}
-.sleep-btn:active{transform:scale(.96)}
-.sleep-on{outline:2px solid rgba(255,255,255,.35)}
-
-/* Indicador ON AIR */
-.air{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:8px}
-.air .dot{width:14px;height:14px;border-radius:9999px;background:#6b7280;position:relative}
-.air.on .dot{background:#ef4444;box-shadow:0 0 0 0 rgba(239,68,68,.7);animation:pulse 1.4s infinite}
-.air-text{font-weight:800;letter-spacing:.18em;font-size:13px;opacity:.9}
-.air.off .air-text{color:#9ca3af}
-.air.on .air-text{color:#ffffff}
-@keyframes pulse{
-  0%{box-shadow:0 0 0 0 rgba(239,68,68,.6)}
-  70%{box-shadow:0 0 0 12px rgba(239,68,68,0)}
-  100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}
+/* Overlay de "Tocar para reproducir" para móviles */
+.tap-start{
+  position:fixed; inset:auto 16px 24px 16px;
+  background:#ffffff; color:#111827; border:none; border-radius:999px;
+  padding:14px 18px; font-weight:800; font-size:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.25);
+  z-index:80;
+}
+@media (min-width:700px){
+  .tap-start{ left:50%; transform:translateX(-50%); width:auto }
 }
