@@ -3,8 +3,12 @@
   "short_name": "Radio",
   "start_url": ".",
   "display": "standalone",
+  "display_override": [
+    "standalone"
+  ],
   "background_color": "#111827",
   "theme_color": "#111827",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "icon-192.png",
@@ -15,6 +19,14 @@
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "splash-1242x2208.png",
+      "type": "image/png",
+      "sizes": "1242x2208",
+      "form_factor": "narrow"
     }
   ]
 }

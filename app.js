@@ -1,3 +1,4 @@
+
 const STATIONS = [
   { number: "97.9", name: "NOW", url: "https://ipanel.instream.audio:7002/stream" },
   { number: "100.7", name: "BLUE 100.7", url: "https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac" },
@@ -16,6 +17,31 @@ const prevBtn = document.getElementById('prev');
 const nextBtn = document.getElementById('next');
 const playIcon = document.getElementById('playIcon');
 const pauseIcon = document.getElementById('pauseIcon');
+const installBtn = document.getElementById('installBtn');
+const splash = document.getElementById('splash');
+
+// Splash fade-out after load
+window.addEventListener('load', () => setTimeout(() => splash.classList.add('splash--hide'), 500));
+
+// Install button (beforeinstallprompt)
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.classList.remove('hidden');
+});
+installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installBtn.classList.add('hidden');
+  // optional toast/log
+  console.log('Instalación:', outcome);
+});
+window.addEventListener('appinstalled', () => {
+  installBtn.classList.add('hidden');
+});
 
 // Init AudioContext + Analyser
 let ctx, analyser, dataArray;
@@ -36,7 +62,6 @@ function setStation(i){
   nameEl.textContent = s.name;
   audio.src = s.url;
 
-  // Media Session (notificación de controles)
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: s.name,
@@ -51,14 +76,11 @@ function setStation(i){
 }
 function updatePlayUI(){
   if (playing){
-    playIcon.classList.add('hidden');
-    pauseIcon.classList.remove('hidden');
+    playIcon.classList.add('hidden'); pauseIcon.classList.remove('hidden');
   } else {
-    pauseIcon.classList.add('hidden');
-    playIcon.classList.remove('hidden');
+    pauseIcon.classList.add('hidden'); playIcon.classList.remove('hidden');
   }
 }
-
 async function togglePlay(){
   if (!playing){
     try {
@@ -67,13 +89,9 @@ async function togglePlay(){
       await audio.play();
       playing = true;
     } catch(e){ console.warn('No se pudo reproducir:', e); }
-  } else {
-    audio.pause();
-    playing = false;
-  }
+  } else { audio.pause(); playing = false; }
   updatePlayUI();
 }
-
 function next(){ setStation(index+1); if (playing) audio.play().catch(()=>{}); }
 function prev(){ setStation(index-1); if (playing) audio.play().catch(()=>{}); }
 
@@ -81,10 +99,9 @@ playBtn.addEventListener('click', togglePlay);
 nextBtn.addEventListener('click', next);
 prevBtn.addEventListener('click', prev);
 
-setStation(0);
-updatePlayUI();
+setStation(0); updatePlayUI();
 
-// Media Session action handlers (para que salgan botones en notificación)
+// Media Session action handlers
 if ('mediaSession' in navigator) {
   navigator.mediaSession.setActionHandler('play', async () => { if(!playing){ await togglePlay(); }});
   navigator.mediaSession.setActionHandler('pause', async () => { if(playing){ await togglePlay(); }});
@@ -92,46 +109,49 @@ if ('mediaSession' in navigator) {
   navigator.mediaSession.setActionHandler('nexttrack', () => next());
 }
 
-// Canvas waveform
+
+// Canvas waveform with idle animation
 const canvas = document.getElementById('wave');
 const ctx2d = canvas.getContext('2d');
 let rafId;
+let idleT = 0;
+
 function draw(){
-  if (!analyser) { rafId = requestAnimationFrame(draw); return; }
-  analyser.getByteTimeDomainData(dataArray);
   const w = canvas.width = canvas.clientWidth * devicePixelRatio;
   const h = canvas.height = canvas.clientHeight * devicePixelRatio;
   ctx2d.clearRect(0,0,w,h);
 
-  // gradient line
+  // gradient
   const grad = ctx2d.createLinearGradient(0,0,w,0);
-  grad.addColorStop(0, '#ff3e3e');
-  grad.addColorStop(0.17, '#ff8c00');
-  grad.addColorStop(0.34, '#ffd400');
-  grad.addColorStop(0.51, '#3be477');
-  grad.addColorStop(0.68, '#32b1ff');
-  grad.addColorStop(0.85, '#8a5cff');
+  grad.addColorStop(0, '#ff3e3e'); grad.addColorStop(0.17, '#ff8c00');
+  grad.addColorStop(0.34, '#ffd400'); grad.addColorStop(0.51, '#3be477');
+  grad.addColorStop(0.68, '#32b1ff'); grad.addColorStop(0.85, '#8a5cff');
   grad.addColorStop(1, '#ff3ef7');
-
   ctx2d.lineWidth = 2 * devicePixelRatio;
   ctx2d.strokeStyle = grad;
   ctx2d.beginPath();
-  for (let i=0;i<dataArray.length;i++){
-    const x = (i/(dataArray.length-1))*w;
-    const y = (dataArray[i]/255)*h;
-    if(i===0) ctx2d.moveTo(x,y); else ctx2d.lineTo(x,y);
+
+  if (analyser && playing) {
+    analyser.getByteTimeDomainData(dataArray);
+    for (let i=0;i<dataArray.length;i++){
+      const x = (i/(dataArray.length-1))*w;
+      const y = (dataArray[i]/255)*h;
+      if(i===0) ctx2d.moveTo(x,y); else ctx2d.lineTo(x,y);
+    }
+  } else {
+    // Idle sine/breathing animation
+    idleT += 0.02;
+    const A = h*0.18 * (0.75 + 0.25*Math.sin(idleT*0.8)); // amplitud respira
+    const baseline = h/2;
+    const freq = 2*Math.PI / (w*0.6);
+    for (let i=0;i<w;i++){
+      const x = i;
+      const y = baseline + Math.sin(i*freq + idleT) * A;
+      if(i===0) ctx2d.moveTo(x,y); else ctx2d.lineTo(x,y);
+    }
   }
   ctx2d.stroke();
 
   rafId = requestAnimationFrame(draw);
 }
 rafId = requestAnimationFrame(draw);
-
-// Keep screen awake while playing (if supported)
-if ('wakeLock' in navigator && navigator.wakeLock.request) {
-  let lock;
-  audio.addEventListener('play', async () => {
-    try { lock = await navigator.wakeLock.request('screen'); } catch(e){}
-  });
-  audio.addEventListener('pause', async () => { try { if (lock) { await lock.release(); lock = null; } } catch(e){} });
-}
