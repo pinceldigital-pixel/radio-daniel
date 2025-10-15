@@ -24,18 +24,15 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
 
     <style>
-        /* Estilos personalizados (SIN CAMBIAR DISEÑO) */
+        /* SIN CAMBIAR DISEÑO */
         body { font-family: 'Inter', sans-serif; font-weight: 400; }
         .font-digital { font-family: 'Orbitron', sans-serif; }
         h1, h2, .font-bold { font-family: 'Inter', sans-serif; font-weight: 700; }
-        
-        /* Dial */
         input[type=range]{ -webkit-appearance:none; appearance:none; width:100%; background:transparent; cursor:pointer; }
         input[type=range]::-webkit-slider-runnable-track{ height:6px; background:linear-gradient(to right,#374151,#4b5563,#374151); border-radius:3px; border:1px solid #1f2937; }
         input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; margin-top:-7px; width:20px; height:20px; background:#d1d5db; border-radius:50%; border:2px solid #9ca3af; box-shadow:0 0 2px rgba(0,0,0,0.5); }
         input[type=range]::-moz-range-track{ height:6px; background:linear-gradient(to right,#374151,#4b5563,#374151); border-radius:3px; }
         input[type=range]::-moz-range-thumb{ width:20px; height:20px; background:#d1d5db; border-radius:50%; border:2px solid #9ca3af; box-shadow:0 0 2px rgba(0,0,0,0.5); }
-
         .is-playing #display { filter: brightness(1.1); }
         .is-off #radio-body { opacity: 0.6; pointer-events: none; }
         .is-off #display { background: #374151 !important; }
@@ -47,7 +44,6 @@
     <div id="radio-container" class="bg-zinc-800 text-white w-full max-w-sm mx-auto rounded-2xl shadow-2xl overflow-hidden border-2 border-zinc-700 transition-all duration-500">
         
         <header class="flex justify-between items-center p-4 bg-zinc-900/70">
-            <!-- Doble-tap en este título para disparar instalación -->
             <h1 id="title-install" class="text-xl font-bold tracking-wider select-none">FM RADIO</h1>
             <button id="power-button" class="w-8 h-8 flex items-center justify-center rounded-full bg-red-600 hover:bg-red-500 active:bg-red-700 shadow-lg transition-colors" aria-label="Encendido">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -106,7 +102,6 @@
         </main>
     </div>
 
-    <!-- Audio Element -->
     <audio id="audio-player" preload="none" crossorigin="anonymous"></audio>
 
     <script>
@@ -116,34 +111,18 @@
                 isPlaying: false,
                 currentFrequency: 97.9,
                 stations: [
-                    { name: 'Now',  freq: 97.9, url: 'https://ipanel.instream.audio:7002/stream', theme: {
-                        bg: 'bg-gradient-to-b from-sky-500 to-sky-700',
-                        text: 'text-sky-200',
-                        glow: 'cyan-glow',
-                        pointer: 'border-t-sky-400',
-                        stroke: 'rgba(200, 240, 255, 0.7)'
+                    { name: 'Now',  freq: 97.9, url: 'https://ipanel.instream.audio:7002/stream', mime: 'audio/mpeg', theme: {
+                        bg: 'bg-gradient-to-b from-sky-500 to-sky-700', text: 'text-sky-200', glow: 'cyan-glow', pointer: 'border-t-sky-400', stroke: 'rgba(200, 240, 255, 0.7)'
                     }},
-                    { name: 'Blue FM', freq: 100.7, url: 'https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac', theme: {
-                        bg: 'bg-gradient-to-b from-blue-500 to-blue-700',
-                        text: 'text-blue-200',
-                        glow: 'blue-glow',
-                        pointer: 'border-t-blue-400',
-                        stroke: 'rgba(200, 220, 255, 0.7)'
+                    { name: 'Blue FM', freq: 100.7, url: 'https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac', mime: 'audio/aac', theme: {
+                        bg: 'bg-gradient-to-b from-blue-500 to-blue-700', text: 'text-blue-200', glow: 'blue-glow', pointer: 'border-t-blue-400', stroke: 'rgba(200, 220, 255, 0.7)'
                     }},
-                    { name: 'Aspen', freq: 102.3, url: 'https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3', theme: {
-                        bg: 'bg-gradient-to-b from-emerald-500 to-emerald-700',
-                        text: 'text-emerald-200',
-                        glow: 'green-glow',
-                        pointer: 'border-t-emerald-400',
-                        stroke: 'rgba(200, 255, 220, 0.7)'
+                    { name: 'Aspen', freq: 102.3, url: 'https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3', mime: 'audio/mpeg', theme: {
+                        bg: 'bg-gradient-to-b from-emerald-500 to-emerald-700', text: 'text-emerald-200', glow: 'green-glow', pointer: 'border-t-emerald-400', stroke: 'rgba(200, 255, 220, 0.7)'
                     }},
-                    { name: 'LN+', freq: 104.9, url: 'https://stream.radio.co/s2ed3bec0a/listen', theme: {
-                        bg: 'bg-gradient-to-b from-red-500 to-red-700',
-                        text: 'text-red-200',
-                        glow: 'red-glow',
-                        pointer: 'border-t-red-400',
-                        stroke: 'rgba(255, 200, 200, 0.7)'
-                    }},
+                    { name: 'LN+', freq: 104.9, url: 'https://stream.radio.co/s2ed3bec0a/listen', mime: 'audio/mpeg', theme: {
+                        bg: 'bg-gradient-to-b from-red-500 to-red-700', text: 'text-red-200', glow: 'red-glow', pointer: 'border-t-red-400', stroke: 'rgba(255, 200, 200, 0.7)'
+                    }}
                 ],
                 deferredPrompt: null
             };
@@ -176,17 +155,24 @@
                 canvasCtx.scale(dpr, dpr);
             }
 
-            function initAudioContext() {
+            function canPlay(mime){ return !!audioPlayer.canPlayType && audioPlayer.canPlayType(mime) !== ''; }
+
+            function initAudioContextSafe() {
                 if (isAudioContextInitialized) return;
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-                source = audioContext.createMediaElementSource(audioPlayer);
-                source.connect(analyser);
-                analyser.connect(audioContext.destination);
-                analyser.fftSize = 256;
-                dataArray = new Uint8Array(analyser.frequencyBinCount);
-                isAudioContextInitialized = true;
-                drawVisualizer();
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    source = audioContext.createMediaElementSource(audioPlayer);
+                    source.connect(analyser);
+                    analyser.connect(audioContext.destination);
+                    analyser.fftSize = 256;
+                    dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    isAudioContextInitialized = true;
+                    drawVisualizer();
+                } catch (e) {
+                    console.warn('Visualizer desactivado (posible CORS del stream).', e);
+                    isAudioContextInitialized = false;
+                }
             }
 
             function drawVisualizer() {
@@ -211,12 +197,7 @@
                 const elementsToClean = [displayDiv, mhzText, sliderPointer, playPauseButton, ...controls.querySelectorAll('button')];
                 elementsToClean.forEach(el => {
                     themes.forEach(theme => {
-                        el.classList.remove(
-                            `from-${theme}-500`, `to-${theme}-700`,
-                            `text-${theme}-200`, `text-${theme}-300`,
-                            `${theme}-glow`,
-                            `border-t-${theme}-400`
-                        );
+                        el.classList.remove(`from-${theme}-500`, `to-${theme}-700`, `text-${theme}-200`, `text-${theme}-300`, `${theme}-glow`, `border-t-${theme}-400`);
                     });
                     el.classList.remove('bg-gradient-to-b');
                 });
@@ -238,13 +219,22 @@
                 return state.stations.find(station => Math.abs(station.freq - freq) < 0.1);
             };
 
+            function pickPlayableUrl(station){
+                // si el mime no es soportado, no reproducimos
+                if (station.mime && !canPlay(station.mime)) return null;
+                return station.url;
+            }
+
             const playCurrentStation = () => {
                 const station = getCurrentStation();
-                if (station) {
-                    audioPlayer.src = station.url;
-                    audioPlayer.play().catch(e => console.error("Error al reproducir audio:", e));
-                }
+                const url = station && pickPlayableUrl(station);
+                if (!url) { console.warn('Formato no soportado para esta estación'); return; }
+                audioPlayer.src = url;
+                audioPlayer.play().then(()=>{
+                    try { if (!isAudioContextInitialized) initAudioContextSafe(); if (audioContext?.state === 'suspended') audioContext.resume(); } catch(e){}
+                }).catch(e => console.error("Error al reproducir audio:", e));
             };
+
             const pauseStation = () => { audioPlayer.pause(); audioPlayer.src = ""; };
 
             const updateDisplay = () => {
@@ -272,8 +262,6 @@
 
             const togglePlayPause = () => {
                 if (!state.isOn) return;
-                if (!isAudioContextInitialized) initAudioContext();
-                if (audioContext && audioContext.state === 'suspended') audioContext.resume();
                 state.isPlaying = !state.isPlaying;
                 playIcon.classList.toggle('hidden', state.isPlaying);
                 pauseIcon.classList.toggle('hidden', !state.isPlaying);
@@ -299,10 +287,10 @@
                 if (!nextStation) {
                     nextStation = direction === 'up' 
                         ? [...state.stations].sort((a,b)=>a.freq-b.freq)[0]
-                        : [...state.stations].sort((a,b)=>b.freq-a>b.freq? -1:1)[0];
+                        : [...state.stations].sort((a,b)=>b.freq-a.freq)[0];
                 }
                 state.currentFrequency = nextStation.freq;
-                frequencySlider.value = state.currentFrequency;
+                document.getElementById('frequency-slider').value = state.currentFrequency;
                 updateDisplay();
                 updatePointerPosition();
                 if (state.isPlaying) playCurrentStation();
@@ -317,11 +305,8 @@
             document.getElementById('frequency-slider').addEventListener('input', handleSliderChange);
             window.addEventListener('resize', setupCanvas);
 
-            // Install prompt
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                state.deferredPrompt = e;
-            });
+            // Install prompt (doble tap en título)
+            window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); state.deferredPrompt = e; });
             let lastTap = 0;
             titleInstall.addEventListener('click', async () => {
                 const now = Date.now();
@@ -333,7 +318,6 @@
                 lastTap = now;
             });
 
-            // Register service worker
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('sw.js').catch(console.error);
             }

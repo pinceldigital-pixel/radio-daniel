@@ -1,17 +1,13 @@
-Radio FM PWA
-================
+Arreglo: radios que no sonaban
+---------------------------------
+¿Qué cambié?
+1) Service Worker ya no intercepta ni cachea streams (audio) ni peticiones cross-origin.
+   Resultado: los streams remotos vuelven a cargar sin bloqueos.
+2) Visualizer se inicia solo si el stream permite CORS.
+3) Misma UI y diseño, 100% intacto.
 
-Instalación rápida
-------------------
-1) Subí todo el contenido del ZIP a un hosting con HTTPS (GitHub Pages, Netlify, Vercel, etc.).
-2) Abrí `index.html` en el navegador del celular o escritorio.
-3) Tocá dos veces el título **“FM RADIO”** para que aparezca el prompt de **Instalar**.
-4) Al abrir como app, se mostrará **pantalla completa**.
-
-Notas
------
-- No cambié el diseño de tu UI (misma “pastilla” con atrás / play / adelante).
-- El Service Worker hace cache básico para que cargue rápido.
-- iOS: también aparece opción de “Añadir a pantalla de inicio”.
-
-¡A sonar!
+Cómo probar
+-----------
+- Serví la carpeta por HTTPS (GitHub Pages/Netlify).
+- Apretá play: las estaciones deben reproducir.
+- Doble tap en "FM RADIO" para instalar la PWA (fullscreen).

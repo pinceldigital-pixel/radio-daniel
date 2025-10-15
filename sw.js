@@ -1,6 +1,10 @@
-const CACHE = 'radio-fm-cache-v1';
-const ASSETS = [
+const CACHE = 'radio-fm-cache-v2';
+const SAME_ORIGIN = self.location.origin;
+const STATIC_ASSETS = [
   './',
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;700&display=swap'
 ];
@@ -8,7 +12,7 @@ const ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    try { await cache.addAll(ASSETS); } catch(e) {}
+    try { await cache.addAll(STATIC_ASSETS); } catch(e) {}
     self.skipWaiting();
   })());
 });
@@ -18,20 +22,29 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  event.respondWith((async () => {
-    const cache = await caches.open(CACHE);
-    const cached = await cache.match(event.request);
-    if (cached) return cached;
-    try {
-      const resp = await fetch(event.request, { mode: 'no-cors' });
-      // Only cache basic/cors ok responses (skip opaque to avoid bloat)
-      if (resp && (resp.type === 'basic' || resp.type === 'cors')) {
-        cache.put(event.request, resp.clone());
+  const req = event.request;
+  const url = new URL(req.url);
+
+  // 1) No tocamos audio ni cross-origin: dejamos pasar directo
+  const isAudio = req.destination === 'audio' || (req.headers.get('accept') || '').includes('audio');
+  const isCrossOrigin = url.origin !== SAME_ORIGIN;
+  if (isAudio || isCrossOrigin) {
+    return; // default browser fetch (sin interceptar)
+  }
+
+  // 2) Cache-first para estáticos same-origin
+  if (req.method === 'GET') {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      const cached = await cache.match(req);
+      if (cached) return cached;
+      try {
+        const resp = await fetch(req);
+        if (resp && resp.ok) cache.put(req, resp.clone());
+        return resp;
+      } catch (e) {
+        return cached || Response.error();
       }
-      return resp;
-    } catch (e) {
-      return cached || Response.error();
-    }
-  })());
+    })());
+  }
 });
