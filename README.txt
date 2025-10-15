@@ -1,8 +1,10 @@
-Cambios pedidos:
-- Ocupa **toda la pantalla** (w-screen, h-screen; layout flexible).
-- El visualizador ahora dibuja **líneas** verticales (no barras).
-- Mantiene la estética original y es PWA instalable (fullscreen).
+Arreglo de diseño
+- Volví al **diseño original** (card centrada, max-w-sm).
+- PWA instalable **fullscreen** (sin estirar la card).
+- Visualizador: **líneas** en lugar de barras.
+- Streams OK: el SW no intercepta audio ni cross-origin.
 
-Probar:
-1) Serví por HTTPS (GitHub Pages/Netlify).
-2) Play para oír; doble-tap en “FM RADIO” para instalar.
+Uso
+1) Servir por HTTPS.
+2) Abrir index.html y tocar play.
+3) Doble-tap “FM RADIO” para instalar.

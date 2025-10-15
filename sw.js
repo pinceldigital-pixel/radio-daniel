@@ -25,7 +25,6 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // No interceptar audio ni cross-origin
   const isAudio = req.destination === 'audio' || (req.headers.get('accept') || '').includes('audio');
   const isCrossOrigin = url.origin !== SAME_ORIGIN;
   if (isAudio || isCrossOrigin) { return; }
