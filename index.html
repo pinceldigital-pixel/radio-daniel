@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Radio PWA</title>
+    
+    <!-- Meta tags for PWA -->
+    <meta name="theme-color" content="#111827"/>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/111827/ffffff?text=Radio">
+    <link id="manifest-placeholder" rel="manifest">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .on-air-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+        .on-air-dot.pulsing {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .dial-container {
+            position: relative;
+            height: 60px;
+            width: 100%;
+            overflow: hidden;
+            background: #1f2937; /* Darker background */
+            border-top: 1px solid #4b5563; /* Darker border */
+            border-bottom: 1px solid #4b5563; /* Darker border */
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.4); /* Inner shadow for depth */
+        }
+        /* New glow effect */
+        .dial-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0) 70%);
+            z-index: 5;
+            pointer-events: none;
+        }
+        .dial-ruler {
+            position: absolute;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            transition: left 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efecto rebote */
+        }
+        .dial-tick {
+            height: 20px;
+            width: 2px;
+            background-color: #6b7280; /* Lighter ticks on dark bg */
+            margin: 0 4px;
+        }
+        .dial-tick.major { height: 35px; background-color: #d1d5db; }
+        .dial-tick-label {
+            position: absolute;
+            bottom: 2px;
+            font-size: 10px;
+            color: #9ca3af; /* Lighter labels */
+            transform: translateX(-50%);
+        }
+        .dial-needle {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background-color: #ef4444;
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+            z-index: 10;
+        }
+        .control-btn:active {
+            transform: scale(0.9);
+        }
+        #sleep-timer-icon.active {
+            color: #3b82f6; /* Blue-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex flex-col items-center justify-center h-screen overflow-hidden antialiased">
+    <div class="w-full max-w-md h-full bg-gray-800 shadow-2xl rounded-lg flex flex-col p-4 md:p-6 space-y-4">
+        
+        <!-- Header: ON AIR & Sleep Timer -->
+        <header class="flex justify-between items-center w-full pt-2">
+            <div id="on-air-indicator" class="flex items-center space-x-2">
+                <div class="on-air-dot bg-gray-600"></div>
+                <span class="font-bold text-lg text-gray-500 tracking-wider">OFF AIR</span>
+            </div>
+            <button id="sleep-timer-btn" class="text-gray-400 hover:text-blue-500 transition-colors duration-300">
+                <svg id="sleep-timer-icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                </svg>
+            </button>
+        </header>
+
+        <!-- Dial -->
+        <div class="dial-container">
+            <div class="dial-ruler"></div>
+            <div class="dial-needle"></div>
+        </div>
+
+        <!-- Radio Info Display -->
+        <div class="flex flex-col items-center justify-center text-center flex-grow">
+            <h1 id="frequency-display" class="text-8xl font-black text-gray-100 tracking-tighter">--.-</h1>
+            <p id="station-name-display" class="text-xl font-medium text-gray-400 mt-2 h-7">Selecciona una estación</p>
+        </div>
+
+        <!-- Audio Visualizer -->
+        <div class="w-full h-24">
+            <canvas id="visualizer" class="w-full h-full"></canvas>
+        </div>
+
+        <!-- Controls -->
+        <footer class="flex items-center justify-center space-x-12 w-full pb-4">
+            <button id="prev-btn" class="control-btn transition-transform duration-150">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 19 2 12 11 5 11 19"></polygon><polygon points="22 19 13 12 22 5 22 19"></polygon>
+                </svg>
+            </button>
+            <button id="play-pause-btn" class="control-btn bg-red-500 text-white w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-transform duration-150 transform hover:scale-105">
+                <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"></path>
+                </svg>
+                <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="currentColor" class="hidden">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
+                </svg>
+            </button>
+            <button id="next-btn" class="control-btn transition-transform duration-150">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 19 22 12 13 5 13 19"></polygon><polygon points="2 19 11 12 2 5 2 19"></polygon>
+                </svg>
+            </button>
+        </footer>
+    </div>
+
+    <audio id="audio-player" crossOrigin="anonymous"></audio>
+
+    <script type="module">
+        const stations = [
+            { name: 'Now 97.9', freq: '97.9', url: 'https://ipanel.instream.audio:7002/stream' },
+            { name: 'Blue 100.7', freq: '100.7', url: 'https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac' },
+            { name: 'Aspen 102.3', freq: '102.3', url: 'https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3' },
+            { name: 'LN+ 104.9', freq: '104.9', url: 'https://stream.radio.co/s2ed3bec0a/listen' }
+        ];
+
+        // --- DOM Elements ---
+        const audioPlayer = document.getElementById('audio-player');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+        const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const frequencyDisplay = document.getElementById('frequency-display');
+        const stationNameDisplay = document.getElementById('station-name-display');
+        const onAirIndicator = document.getElementById('on-air-indicator');
+        const onAirDot = onAirIndicator.querySelector('.on-air-dot');
+        const onAirText = onAirIndicator.querySelector('span');
+        const dialRuler = document.querySelector('.dial-ruler');
+        const sleepTimerBtn = document.getElementById('sleep-timer-btn');
+        const sleepTimerIcon = document.getElementById('sleep-timer-icon');
+
+        // --- State ---
+        let currentStationIndex = 0;
+        let isPlaying = false;
+        let audioContext;
+        let analyser;
+        let source;
+        let sleepTimerID = null;
+
+        // --- Web Audio API for Visualizer ---
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
+        let dataArray, bufferLength;
+
+        function setupAudioContext() {
+            if (audioContext) return;
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                source = audioContext.createMediaElementSource(audioPlayer);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                
+                bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+            } catch (e) {
+                console.error("Web Audio API is not supported in this browser", e);
+            }
+        }
+
+        // --- Dial Creation ---
+        const minFreq = 95.0;
+        const maxFreq = 108.0;
+
+        function createDial() {
+            dialRuler.innerHTML = '';
+            const range = maxFreq - minFreq;
+            const totalWidth = range * 50; // 50px per MHz
+            dialRuler.style.width = `${totalWidth}px`;
+
+            for (let i = 0; i <= range * 10; i++) {
+                const freq = minFreq + i / 10;
+                const tick = document.createElement('div');
+                tick.className = 'dial-tick';
+                if (i % 10 === 0) {
+                    tick.classList.add('major');
+                    const label = document.createElement('span');
+                    label.className = 'dial-tick-label';
+                    label.textContent = freq.toFixed(0);
+                    tick.appendChild(label);
+                }
+                dialRuler.appendChild(tick);
+            }
+        }
+
+        // --- Core Functions ---
+        function loadStation(index) {
+            const station = stations[index];
+            audioPlayer.src = station.url;
+            updateUI(station);
+            if(isPlaying) play();
+        }
+
+        function play() {
+            if (!audioContext) {
+                setupAudioContext();
+            }
+            // Resume AudioContext if it was suspended
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            
+            audioPlayer.play().then(() => {
+                isPlaying = true;
+                updatePlayPauseIcon();
+                updateOnAirIndicator(true);
+                updateMediaSession();
+                drawVisualizer();
+            }).catch(error => {
+                console.error('Error playing audio:', error);
+                // Can't play automatically, wait for user interaction.
+                isPlaying = false;
+                updatePlayPauseIcon();
+                updateOnAirIndicator(false);
+            });
+        }
+
+        function pause() {
+            audioPlayer.pause();
+            isPlaying = false;
+            updatePlayPauseIcon();
+            updateOnAirIndicator(false);
+            updateMediaSession();
+        }
+
+        function togglePlayPause() {
+            if (isPlaying) {
+                pause();
+            } else {
+                play();
+            }
+        }
+
+        function nextStation() {
+            currentStationIndex = (currentStationIndex + 1) % stations.length;
+            loadStation(currentStationIndex);
+        }
+
+        function prevStation() {
+            currentStationIndex = (currentStationIndex - 1 + stations.length) % stations.length;
+            loadStation(currentStationIndex);
+        }
+
+        // --- UI Update Functions ---
+        function updateUI(station) {
+            frequencyDisplay.textContent = station.freq;
+            stationNameDisplay.textContent = station.name;
+            document.title = `${station.name} | Radio PWA`;
+
+            // Update Dial Position with bounce
+            const range = maxFreq - minFreq;
+            const stationPos = parseFloat(station.freq) - minFreq;
+            const percentage = stationPos / range;
+            const dialWidth = dialRuler.offsetWidth;
+            const containerWidth = dialRuler.parentElement.offsetWidth;
+            const offset = (dialWidth * percentage) - (containerWidth / 2);
+            dialRuler.style.left = `-${offset}px`;
+        }
+
+        function updatePlayPauseIcon() {
+            if (isPlaying) {
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+            } else {
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+            }
+        }
+        
+        function updateOnAirIndicator(isOn) {
+            if(isOn) {
+                onAirDot.classList.add('pulsing');
+                onAirDot.classList.replace('bg-gray-600', 'bg-red-500');
+                onAirText.textContent = 'ON AIR';
+                onAirText.classList.replace('text-gray-500', 'text-red-500');
+            } else {
+                onAirDot.classList.remove('pulsing');
+                onAirDot.classList.replace('bg-red-500', 'bg-gray-600');
+                onAirText.textContent = 'OFF AIR';
+                onAirText.classList.replace('text-red-500', 'text-gray-500');
+            }
+        }
+
+        // --- Sleep Timer ---
+        function setSleepTimer() {
+            if (sleepTimerID) {
+                // Cancel existing timer
+                clearTimeout(sleepTimerID);
+                sleepTimerID = null;
+                sleepTimerIcon.classList.remove('active');
+                console.log('Sleep timer cancelled.');
+            } else {
+                // Set new timer
+                sleepTimerID = setTimeout(() => {
+                    pause();
+                    sleepTimerID = null;
+                    sleepTimerIcon.classList.remove('active');
+                    console.log('Sleep timer finished. Radio paused.');
+                }, 30 * 60 * 1000); // 30 minutes
+                sleepTimerIcon.classList.add('active');
+                console.log('Sleep timer set for 30 minutes.');
+            }
+        }
+
+        // --- Visualizer Drawing ---
+        function drawVisualizer() {
+            if (!isPlaying || !analyser) {
+                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                return;
+            };
+
+            requestAnimationFrame(drawVisualizer);
+            analyser.getByteTimeDomainData(dataArray);
+
+            canvasCtx.fillStyle = 'rgb(31, 41, 55)'; // Background color (gray-800)
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+            canvasCtx.lineWidth = 2;
+            canvasCtx.strokeStyle = '#ef4444'; // Red-500
+            canvasCtx.beginPath();
+            
+            const sliceWidth = canvas.width * 1.0 / bufferLength;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = v * canvas.height / 2;
+                if (i === 0) {
+                    canvasCtx.moveTo(x, y);
+                } else {
+                    canvasCtx.lineTo(x, y);
+                }
+                x += sliceWidth;
+            }
+            canvasCtx.lineTo(canvas.width, canvas.height / 2);
+            canvasCtx.stroke();
+        }
+        
+        // --- Media Session API ---
+        function updateMediaSession() {
+            if ('mediaSession' in navigator) {
+                const station = stations[currentStationIndex];
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: station.name,
+                    artist: station.freq + ' FM',
+                    album: 'Radio PWA',
+                    artwork: [
+                        { src: 'https://placehold.co/96x96/ef4444/ffffff?text=R', sizes: '96x96', type: 'image/png' },
+                        { src: 'https://placehold.co/128x128/ef4444/ffffff?text=R', sizes: '128x128', type: 'image/png' },
+                        { src: 'https://placehold.co/192x192/ef4444/ffffff?text=R', sizes: '192x192', type: 'image/png' },
+                        { src: 'https://placehold.co/256x256/ef4444/ffffff?text=R', sizes: '256x256', type: 'image/png' },
+                        { src: 'https://placehold.co/384x384/ef4444/ffffff?text=R', sizes: '384x384', type: 'image/png' },
+                        { src: 'https://placehold.co/512x512/ef4444/ffffff?text=R', sizes: '512x512', type: 'image/png' },
+                    ]
+                });
+                navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+            }
+        }
+
+        function setupMediaSessionHandlers() {
+             if ('mediaSession' in navigator) {
+                navigator.mediaSession.setActionHandler('play', play);
+                navigator.mediaSession.setActionHandler('pause', pause);
+                navigator.mediaSession.setActionHandler('previoustrack', prevStation);
+                navigator.mediaSession.setActionHandler('nexttrack', nextStation);
+            }
+        }
+        
+        // --- PWA Service Worker & Manifest ---
+        function setupPWA() {
+            const manifest = {
+                "name": "Radio PWA",
+                "short_name": "Radio",
+                "start_url": ".",
+                "display": "standalone",
+                "background_color": "#111827",
+                "theme_color": "#111827",
+                "description": "Una simple app de radio PWA.",
+                "icons": [{
+                    "src": "https://placehold.co/192x192/111827/ffffff?text=Radio",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }, {
+                    "src": "https://placehold.co/512x512/111827/ffffff?text=Radio",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }]
+            };
+            const manifestString = JSON.stringify(manifest);
+            const manifestBlob = new Blob([manifestString], {type: 'application/json'});
+            const manifestUrl = URL.createObjectURL(manifestBlob);
+            document.querySelector('#manifest-placeholder').setAttribute('href', manifestUrl);
+
+            if ('serviceWorker' in navigator) {
+                const swContent = `
+                    self.addEventListener('install', (e) => {
+                        e.waitUntil(
+                            caches.open('radio-pwa-cache').then((cache) => {
+                                // Cache the main page. This is a single file app.
+                                return cache.add('/');
+                            })
+                        );
+                    });
+                    self.addEventListener('fetch', (e) => {
+                         e.respondWith(
+                            caches.match(e.request).then((response) => {
+                                return response || fetch(e.request);
+                            })
+                        );
+                    });
+                `;
+                const swBlob = new Blob([swContent], {type: 'application/javascript'});
+                const swUrl = URL.createObjectURL(swBlob);
+
+                navigator.serviceWorker.register(swUrl)
+                    .then(reg => console.log('Service worker registrado', reg))
+                    .catch(err => console.error('Error registrando service worker', err));
+            }
+        }
+
+
+        // --- Initialization ---
+        window.addEventListener('load', () => {
+            createDial();
+            loadStation(currentStationIndex);
+            updatePlayPauseIcon();
+            updateOnAirIndicator(false);
+            setupMediaSessionHandlers();
+            setupPWA();
+
+            // Event Listeners
+            playPauseBtn.addEventListener('click', togglePlayPause);
+            nextBtn.addEventListener('click', nextStation);
+            prevBtn.addEventListener('click', prevStation);
+            sleepTimerBtn.addEventListener('click', setSleepTimer);
+            
+            // Handle audio element events to keep UI in sync with notifications
+            audioPlayer.addEventListener('play', () => {
+                if(!isPlaying) {
+                    isPlaying = true;
+                    updatePlayPauseIcon();
+                    updateOnAirIndicator(true);
+                    updateMediaSession();
+                    drawVisualizer();
+                }
+            });
+
+            audioPlayer.addEventListener('pause', () => {
+                if(isPlaying) {
+                    isPlaying = false;
+                    updatePlayPauseIcon();
+                    updateOnAirIndicator(false);
+                    updateMediaSession();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
