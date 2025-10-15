@@ -25,14 +25,11 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // 1) No tocamos audio ni cross-origin: dejamos pasar directo
+  // No interceptar audio ni cross-origin
   const isAudio = req.destination === 'audio' || (req.headers.get('accept') || '').includes('audio');
   const isCrossOrigin = url.origin !== SAME_ORIGIN;
-  if (isAudio || isCrossOrigin) {
-    return; // default browser fetch (sin interceptar)
-  }
+  if (isAudio || isCrossOrigin) { return; }
 
-  // 2) Cache-first para estáticos same-origin
   if (req.method === 'GET') {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE);

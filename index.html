@@ -24,7 +24,7 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
 
     <style>
-        /* SIN CAMBIAR DISEÑO */
+        /* SIN CAMBIAR LA ESTÉTICA, SOLO FULLSCREEN + LÍNEAS */
         body { font-family: 'Inter', sans-serif; font-weight: 400; }
         .font-digital { font-family: 'Orbitron', sans-serif; }
         h1, h2, .font-bold { font-family: 'Inter', sans-serif; font-weight: 700; }
@@ -37,14 +37,18 @@
         .is-off #radio-body { opacity: 0.6; pointer-events: none; }
         .is-off #display { background: #374151 !important; }
         .is-off #station-name, .is-off #frequency-display { color: transparent; }
+
+        /* Fullscreen helpers */
+        html, body { height: 100%; }
     </style>
 </head>
-<body class="bg-gray-900 flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-900 min-h-screen">
 
-    <div id="radio-container" class="bg-zinc-800 text-white w-full max-w-sm mx-auto rounded-2xl shadow-2xl overflow-hidden border-2 border-zinc-700 transition-all duration-500">
+    <!-- Ahora ocupa toda la pantalla: w-screen h-screen, sin max-w -->
+    <div id="radio-container" class="bg-zinc-800 text-white w-screen h-screen mx-auto shadow-2xl overflow-hidden transition-all duration-500 flex flex-col border-2 border-zinc-700">
         
         <header class="flex justify-between items-center p-4 bg-zinc-900/70">
-            <h1 id="title-install" class="text-xl font-bold tracking-wider select-none">FM RADIO</h1>
+            <h1 id="title-install" class="text-xl md:text-2xl font-bold tracking-wider select-none">FM RADIO</h1>
             <button id="power-button" class="w-8 h-8 flex items-center justify-center rounded-full bg-red-600 hover:bg-red-500 active:bg-red-700 shadow-lg transition-colors" aria-label="Encendido">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
@@ -52,14 +56,14 @@
             </button>
         </header>
 
-        <main id="radio-body" class="p-4 space-y-4 transition-opacity duration-500">
-            <div id="display" class="rounded-lg p-6 text-center shadow-inner relative overflow-hidden transition-all duration-500">
+        <main id="radio-body" class="p-4 space-y-4 transition-opacity duration-500 flex-1 flex flex-col">
+            <div id="display" class="rounded-lg p-6 text-center shadow-inner relative overflow-hidden transition-all duration-500 flex-1">
                 <canvas id="visualizer" class="absolute top-0 left-0 w-full h-full opacity-60"></canvas>
-                <div class="relative z-10">
-                    <h2 id="station-name" class="text-3xl font-bold h-9 transition-all duration-300">---</h2>
+                <div class="relative z-10 flex flex-col items-center justify-center h-full">
+                    <h2 id="station-name" class="text-3xl md:text-5xl font-bold h-9 md:h-12 transition-all duration-300">---</h2>
                     <div class="my-2">
-                        <p id="frequency-display" class="text-7xl font-digital font-bold tracking-widest">97.9</p>
-                        <span id="mhz-text" class="text-xl font-digital">MHz</span>
+                        <p id="frequency-display" class="text-7xl md:text-8xl font-digital font-bold tracking-widest">97.9</p>
+                        <span id="mhz-text" class="text-xl md:text-2xl font-digital">MHz</span>
                     </div>
                 </div>
             </div>
@@ -112,16 +116,16 @@
                 currentFrequency: 97.9,
                 stations: [
                     { name: 'Now',  freq: 97.9, url: 'https://ipanel.instream.audio:7002/stream', mime: 'audio/mpeg', theme: {
-                        bg: 'bg-gradient-to-b from-sky-500 to-sky-700', text: 'text-sky-200', glow: 'cyan-glow', pointer: 'border-t-sky-400', stroke: 'rgba(200, 240, 255, 0.7)'
+                        bg: 'bg-gradient-to-b from-sky-500 to-sky-700', text: 'text-sky-200', glow: 'cyan-glow', pointer: 'border-t-sky-400', stroke: 'rgba(200, 240, 255, 0.9)'
                     }},
                     { name: 'Blue FM', freq: 100.7, url: 'https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac', mime: 'audio/aac', theme: {
-                        bg: 'bg-gradient-to-b from-blue-500 to-blue-700', text: 'text-blue-200', glow: 'blue-glow', pointer: 'border-t-blue-400', stroke: 'rgba(200, 220, 255, 0.7)'
+                        bg: 'bg-gradient-to-b from-blue-500 to-blue-700', text: 'text-blue-200', glow: 'blue-glow', pointer: 'border-t-blue-400', stroke: 'rgba(200, 220, 255, 0.9)'
                     }},
                     { name: 'Aspen', freq: 102.3, url: 'https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3', mime: 'audio/mpeg', theme: {
-                        bg: 'bg-gradient-to-b from-emerald-500 to-emerald-700', text: 'text-emerald-200', glow: 'green-glow', pointer: 'border-t-emerald-400', stroke: 'rgba(200, 255, 220, 0.7)'
+                        bg: 'bg-gradient-to-b from-emerald-500 to-emerald-700', text: 'text-emerald-200', glow: 'green-glow', pointer: 'border-t-emerald-400', stroke: 'rgba(200, 255, 220, 0.9)'
                     }},
                     { name: 'LN+', freq: 104.9, url: 'https://stream.radio.co/s2ed3bec0a/listen', mime: 'audio/mpeg', theme: {
-                        bg: 'bg-gradient-to-b from-red-500 to-red-700', text: 'text-red-200', glow: 'red-glow', pointer: 'border-t-red-400', stroke: 'rgba(255, 200, 200, 0.7)'
+                        bg: 'bg-gradient-to-b from-red-500 to-red-700', text: 'text-red-200', glow: 'red-glow', pointer: 'border-t-red-400', stroke: 'rgba(255, 200, 200, 0.9)'
                     }}
                 ],
                 deferredPrompt: null
@@ -175,20 +179,27 @@
                 }
             }
 
+            // === LÍNEAS EN VEZ DE BARRAS ===
             function drawVisualizer() {
                 requestAnimationFrame(drawVisualizer);
                 if (!isAudioContextInitialized) return;
                 analyser.getByteFrequencyData(dataArray);
                 canvasCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
-                const barWidth = (visualizerCanvas.width / (analyser.frequencyBinCount * 2));
-                let x = 0;
                 const station = getCurrentStation();
-                const strokeStyle = station ? station.theme.stroke : 'rgba(240, 255, 255, 0.7)';
-                canvasCtx.fillStyle = strokeStyle;
-                for (let i = 0; i < analyser.frequencyBinCount; i++) {
-                    const barHeight = (dataArray[i] / 255) * visualizerCanvas.height * 0.8;
-                    canvasCtx.fillRect(x, visualizerCanvas.height - barHeight, barWidth, barHeight);
-                    x += barWidth + 2;
+                const strokeStyle = station ? station.theme.stroke : 'rgba(240,255,255,0.9)';
+                canvasCtx.strokeStyle = strokeStyle;
+                canvasCtx.lineCap = 'round';
+                const H = visualizerCanvas.height;
+                const step = 2; // saltamos cada 2 bins para no saturar
+                const width = visualizerCanvas.width / (dataArray.length / step);
+                for (let i = 0, x = 0; i < dataArray.length; i += step, x += width) {
+                    const v = dataArray[i] / 255;
+                    const h = v * H * 0.8;
+                    canvasCtx.beginPath();
+                    canvasCtx.lineWidth = Math.max(1, width * 0.15);
+                    canvasCtx.moveTo(x + width / 2, H - h);
+                    canvasCtx.lineTo(x + width / 2, H);
+                    canvasCtx.stroke();
                 }
             }
 
@@ -197,7 +208,7 @@
                 const elementsToClean = [displayDiv, mhzText, sliderPointer, playPauseButton, ...controls.querySelectorAll('button')];
                 elementsToClean.forEach(el => {
                     themes.forEach(theme => {
-                        el.classList.remove(`from-${theme}-500`, `to-${theme}-700`, `text-${theme}-200`, `text-${theme}-300`, `${theme}-glow`, `border-t-${theme}-400`);
+                        el.classList.remove(`from-${theme}-500`, `to-${theme}-700`, `text-${theme}-2 00`, `text-${theme}-300`, `${theme}-glow`, `border-t-${theme}-400`);
                     });
                     el.classList.remove('bg-gradient-to-b');
                 });
@@ -220,7 +231,6 @@
             };
 
             function pickPlayableUrl(station){
-                // si el mime no es soportado, no reproducimos
                 if (station.mime && !canPlay(station.mime)) return null;
                 return station.url;
             }
