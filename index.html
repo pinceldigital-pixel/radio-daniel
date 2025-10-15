@@ -202,27 +202,48 @@
                 }
             }
 
+            
+            const stripByPrefix = (el, prefixes) => {
+                const toRemove = [];
+                el.classList.forEach(c => {
+                    if (prefixes.some(p => c.startsWith(p))) toRemove.push(c);
+                });
+                toRemove.forEach(c => el.classList.remove(c));
+            };
+
             const removeAllThemes = () => {
-                const themes = ['cyan', 'blue', 'green', 'red'];
-                const elementsToClean = [displayDiv, mhzText, sliderPointer, playPauseButton, ...controls.querySelectorAll('button')];
-                elementsToClean.forEach(el => {
-                    themes.forEach(theme => {
-                        el.classList.remove(`from-${theme}-500`, `to-${theme}-700`, `text-${theme}-200`, `text-${theme}-300`, `${theme}-glow`, `border-t-${theme}-400`);
-                    });
-                    el.classList.remove('bg-gradient-to-b');
+                // display gradient: remove bg-gradient and any from-*/to-*
+                stripByPrefix(displayDiv, ['from-','to-']);
+                displayDiv.classList.remove('bg-gradient-to-b');
+
+                // text color on MHz
+                stripByPrefix(mhzText, ['text-']);
+
+                // slider pointer border color
+                stripByPrefix(sliderPointer, ['border-t-']);
+
+                // buttons text color + custom glow tags
+                controls.querySelectorAll('button').forEach(btn => {
+                    stripByPrefix(btn, ['text-','from-','to-','border-t-']);
+                    btn.classList.remove('cyan-glow','blue-glow','green-glow','red-glow');
                 });
             };
 
             const applyTheme = (station) => {
                 removeAllThemes();
                 const theme = station ? station.theme : state.stations[0].theme;
+                // gradient
                 displayDiv.classList.add('bg-gradient-to-b', ...theme.bg.split(' '));
+                // text & pointer
                 mhzText.classList.add(theme.text);
                 sliderPointer.classList.add(theme.pointer);
+                // buttons tint
+                const shade = theme.text.split('-')[1] || 'sky';
                 controls.querySelectorAll('button').forEach(btn => {
-                    btn.classList.add(theme.glow, `text-${theme.text.split('-')[1]}-300`);
+                    btn.classList.add(theme.glow, `text-${shade}-300`);
                 });
             };
+
 
             const getCurrentStation = () => {
                 const freq = parseFloat(state.currentFrequency);
