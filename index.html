@@ -2,314 +2,350 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Radio PWA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Radio FM</title>
+    
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Orbitron & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#111827">
+    <meta name="theme-color" content="#1f2937">
+
+    <!-- iOS PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RadioFM">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
+        /* Estilos personalizados (SIN CAMBIAR DISEÑO) */
+        body { font-family: 'Inter', sans-serif; font-weight: 400; }
+        .font-digital { font-family: 'Orbitron', sans-serif; }
+        h1, h2, .font-bold { font-family: 'Inter', sans-serif; font-weight: 700; }
         
-        .font-montserrat {
-            font-family: 'Montserrat', sans-serif;
-        }
+        /* Dial */
+        input[type=range]{ -webkit-appearance:none; appearance:none; width:100%; background:transparent; cursor:pointer; }
+        input[type=range]::-webkit-slider-runnable-track{ height:6px; background:linear-gradient(to right,#374151,#4b5563,#374151); border-radius:3px; border:1px solid #1f2937; }
+        input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; margin-top:-7px; width:20px; height:20px; background:#d1d5db; border-radius:50%; border:2px solid #9ca3af; box-shadow:0 0 2px rgba(0,0,0,0.5); }
+        input[type=range]::-moz-range-track{ height:6px; background:linear-gradient(to right,#374151,#4b5563,#374151); border-radius:3px; }
+        input[type=range]::-moz-range-thumb{ width:20px; height:20px; background:#d1d5db; border-radius:50%; border:2px solid #9ca3af; box-shadow:0 0 2px rgba(0,0,0,0.5); }
 
-        /* --- Animación de pulso para ON AIR --- */
-        .on-air-pulse {
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(234, 88, 12, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0); }
-        }
-        
-        /* --- Estilos del Dial Recto --- */
-        #dial-track {
-            transition: transform 1s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-        }
+        .is-playing #display { filter: brightness(1.1); }
+        .is-off #radio-body { opacity: 0.6; pointer-events: none; }
+        .is-off #display { background: #374151 !important; }
+        .is-off #station-name, .is-off #frequency-display { color: transparent; }
     </style>
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
 </head>
-<body class="text-white flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
+<body class="bg-gray-900 flex items-center justify-center min-h-screen p-4">
 
-    <div class="w-full max-w-sm mx-auto bg-gray-900 rounded-3xl p-6 flex flex-col justify-between" style="height: 90vh; max-height: 800px;">
+    <div id="radio-container" class="bg-zinc-800 text-white w-full max-w-sm mx-auto rounded-2xl shadow-2xl overflow-hidden border-2 border-zinc-700 transition-all duration-500">
         
-        <!-- HEADER: ON AIR Y TEMPORIZADOR -->
-        <header class="flex justify-between items-center">
-            <div id="air-status-container" class="flex items-center space-x-2">
-                <div id="air-status-dot" class="w-3 h-3 rounded-full bg-gray-600"></div>
-                <span id="air-status-text" class="text-sm font-semibold text-gray-400 tracking-widest">OFF AIR</span>
-            </div>
-            <button id="sleep-timer-btn" class="text-gray-400 hover:text-white transition-colors" style="color:#9ca3af;">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        <header class="flex justify-between items-center p-4 bg-zinc-900/70">
+            <!-- Doble-tap en este título para disparar instalación -->
+            <h1 id="title-install" class="text-xl font-bold tracking-wider select-none">FM RADIO</h1>
+            <button id="power-button" class="w-8 h-8 flex items-center justify-center rounded-full bg-red-600 hover:bg-red-500 active:bg-red-700 shadow-lg transition-colors" aria-label="Encendido">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
                 </svg>
             </button>
         </header>
 
-        <!-- DISPLAY PRINCIPAL Y DIAL -->
-        <main class="flex-grow flex flex-col items-center justify-center text-center -mt-4">
-            <h1 id="station-freq" class="font-montserrat text-8xl font-bold tracking-tighter">--.-</h1>
-            <p id="station-name" class="text-xl font-medium text-gray-300 mt-2 tracking-wider">Selecciona una estación</p>
-            
-            <!-- DIAL DE RADIO RECTO -->
-            <div class="w-full h-24 mt-6 mb-8 relative flex justify-center items-center">
-                <!-- Ventana del dial -->
-                <div id="dial-container" class="w-11/12 h-12 relative overflow-hidden">
-                    <!-- Riel de Frecuencias (el que se mueve) -->
-                    <div id="dial-track" class="absolute top-0 left-0 h-full flex items-center whitespace-nowrap">
-                        <!-- Marcas y números generados por JS -->
+        <main id="radio-body" class="p-4 space-y-4 transition-opacity duration-500">
+            <div id="display" class="rounded-lg p-6 text-center shadow-inner relative overflow-hidden transition-all duration-500">
+                <canvas id="visualizer" class="absolute top-0 left-0 w-full h-full opacity-60"></canvas>
+                <div class="relative z-10">
+                    <h2 id="station-name" class="text-3xl font-bold h-9 transition-all duration-300">---</h2>
+                    <div class="my-2">
+                        <p id="frequency-display" class="text-7xl font-digital font-bold tracking-widest">97.9</p>
+                        <span id="mhz-text" class="text-xl font-digital">MHz</span>
                     </div>
                 </div>
-                
-                <!-- Aguja Naranja (Fija) -->
-                <div class="absolute w-0.5 h-14 bg-orange-500 rounded-full shadow-[0_0_8px_theme(colors.orange.500)]"></div>
+            </div>
+
+            <div class="bg-zinc-700/50 p-4 rounded-lg shadow-md space-y-2">
+                <div class="flex items-center justify-between space-x-4">
+                    <button id="scan-down" class="p-2 bg-zinc-800 rounded-md hover:bg-zinc-600 transition-colors" aria-label="Anterior">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    <div class="w-full relative">
+                         <div class="flex justify-between text-zinc-400 px-1 text-sm">
+                            <span>97</span><span>101</span><span>105</span>
+                        </div>
+                        <input id="frequency-slider" type="range" min="97.0" max="105.0" step="0.1" value="97.9">
+                        <div class="w-full h-2 absolute top-[20px] left-0 pointer-events-none">
+                             <div class="w-0.5 h-full bg-zinc-500 mx-auto"></div>
+                        </div>
+                    </div>
+                    <button id="scan-up" class="p-2 bg-zinc-800 rounded-md hover:bg-zinc-600 transition-colors" aria-label="Siguiente">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                </div>
+                 <div class="relative h-2">
+                     <div id="slider-pointer" class="absolute top-0 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 transform -translate-x-1/2 transition-all duration-100 ease-linear"></div>
+                </div>
+            </div>
+
+            <div id="controls" class="flex items-center justify-center space-x-6 bg-zinc-900/50 rounded-full p-2">
+                <button id="btn-prev" class="p-3 rounded-full" aria-label="Atrás">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
+                </button>
+                <button id="play-pause-button" class="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center shadow-lg" aria-label="Reproducir/Pausar">
+                    <div id="play-icon"><svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg></div>
+                    <div id="pause-icon" class="hidden"><svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" /></svg></div>
+                </button>
+                <button id="btn-next" class="p-3 rounded-full" aria-label="Adelante">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+                </button>
             </div>
         </main>
-        
-        <!-- CONTROLES -->
-        <footer class="flex items-center justify-around w-full">
-            <button id="prev-btn" class="p-3 text-gray-400 hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M8.445 14.832A1 1 0 0010 14.03V5.969a1 1 0 00-1.555-.832L4.12 9.168a1 1 0 000 1.664l4.325 4.001z" /><path d="M14.445 14.832A1 1 0 0016 14.03V5.969a1 1 0 00-1.555-.832L10.12 9.168a1 1 0 000 1.664l4.325 4.001z" />
-                </svg>
-            </button>
-            <button id="play-pause-btn" class="bg-transparent border-2 border-gray-600 rounded-full p-5 shadow-lg transform hover:scale-105 hover:border-orange-500 transition-all">
-                <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M6.3 5.1A1 1 0 0 0 5 6v8a1 1 0 0 0 1.3.9l6-4a1 1 0 0 0 0-1.8l-6-4z" />
-                </svg>
-                <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 hidden" fill="currentColor" viewBox="0 0 20 20">
-                     <path d="M5 6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5zm6 0a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-2z"/>
-                </svg>
-            </button>
-            <button id="next-btn" class="p-3 text-gray-400 hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M5.555 5.168A1 1 0 004 5.969v8.062a1 1 0 001.555.832L10.88 10.832a1 1 0 000-1.664L5.555 5.168z" /><path d="M11.555 5.168A1 1 0 0010 5.969v8.062a1 1 0 001.555.832L16.88 10.832a1 1 0 000-1.664l-5.325-4.001z" />
-                </svg>
-            </button>
-        </footer>
     </div>
-    
-    <audio id="radio-player" crossorigin="anonymous"></audio>
+
+    <!-- Audio Element -->
+    <audio id="audio-player" preload="none" crossorigin="anonymous"></audio>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- Service Worker y PWA ---
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js')
-                    .then(registration => console.log('Service Worker registrado con éxito:', registration))
-                    .catch(error => console.log('Error en el registro del Service Worker:', error));
-            }
+            const state = {
+                isOn: true,
+                isPlaying: false,
+                currentFrequency: 97.9,
+                stations: [
+                    { name: 'Now',  freq: 97.9, url: 'https://ipanel.instream.audio:7002/stream', theme: {
+                        bg: 'bg-gradient-to-b from-sky-500 to-sky-700',
+                        text: 'text-sky-200',
+                        glow: 'cyan-glow',
+                        pointer: 'border-t-sky-400',
+                        stroke: 'rgba(200, 240, 255, 0.7)'
+                    }},
+                    { name: 'Blue FM', freq: 100.7, url: 'https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac', theme: {
+                        bg: 'bg-gradient-to-b from-blue-500 to-blue-700',
+                        text: 'text-blue-200',
+                        glow: 'blue-glow',
+                        pointer: 'border-t-blue-400',
+                        stroke: 'rgba(200, 220, 255, 0.7)'
+                    }},
+                    { name: 'Aspen', freq: 102.3, url: 'https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3', theme: {
+                        bg: 'bg-gradient-to-b from-emerald-500 to-emerald-700',
+                        text: 'text-emerald-200',
+                        glow: 'green-glow',
+                        pointer: 'border-t-emerald-400',
+                        stroke: 'rgba(200, 255, 220, 0.7)'
+                    }},
+                    { name: 'LN+', freq: 104.9, url: 'https://stream.radio.co/s2ed3bec0a/listen', theme: {
+                        bg: 'bg-gradient-to-b from-red-500 to-red-700',
+                        text: 'text-red-200',
+                        glow: 'red-glow',
+                        pointer: 'border-t-red-400',
+                        stroke: 'rgba(255, 200, 200, 0.7)'
+                    }},
+                ],
+                deferredPrompt: null
+            };
 
-            // --- Elementos del DOM ---
-            const player = document.getElementById('radio-player');
-            const playPauseBtn = document.getElementById('play-pause-btn');
+            const radioContainer = document.getElementById('radio-container');
+            const powerButton = document.getElementById('power-button');
+            const playPauseButton = document.getElementById('play-pause-button');
             const playIcon = document.getElementById('play-icon');
             const pauseIcon = document.getElementById('pause-icon');
-            const nextBtn = document.getElementById('next-btn');
-            const prevBtn = document.getElementById('prev-btn');
-            const stationFreqEl = document.getElementById('station-freq');
-            const stationNameEl = document.getElementById('station-name');
-            const airStatusDot = document.getElementById('air-status-dot');
-            const airStatusText = document.getElementById('air-status-text');
-            const sleepTimerBtn = document.getElementById('sleep-timer-btn');
-            const dialTrack = document.getElementById('dial-track');
-            const dialContainer = document.getElementById('dial-container');
+            const frequencySlider = document.getElementById('frequency-slider');
+            const sliderPointer = document.getElementById('slider-pointer');
+            const frequencyDisplay = document.getElementById('frequency-display');
+            const stationNameDisplay = document.getElementById('station-name');
+            const audioPlayer = document.getElementById('audio-player');
+            const displayDiv = document.getElementById('display');
+            const mhzText = document.getElementById('mhz-text');
+            const controls = document.getElementById('controls');
+            const visualizerCanvas = document.getElementById('visualizer');
+            const canvasCtx = visualizerCanvas.getContext('2d');
+            const titleInstall = document.getElementById('title-install');
 
-            // --- Datos de las estaciones ---
-            const stations = [
-                { name: 'Now 97.9', freq: '97.9', url: 'https://ipanel.instream.audio:7002/stream' },
-                { name: 'Blue 100.7', freq: '100.7', url: 'https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac' },
-                { name: 'Aspen 102.3', freq: '102.3', url: 'https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3' },
-                { name: 'LN+ 104.9', freq: '104.9', url: 'https://stream.radio.co/s2ed3bec0a/listen' }
-            ];
-            
-            // --- Estado de la aplicación ---
-            let currentStationIndex = 0;
-            let isPlaying = false;
-            let sleepTimerId = null;
+            let audioContext, analyser, source, dataArray, isAudioContextInitialized = false;
 
-            // --- Funciones del Dial ---
-            function generateDialMarks() {
-                const minFreq = 87;
-                const maxFreq = 109;
-                const spacing = 12; // px entre cada marca de 0.1 MHz
+            function setupCanvas() {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = displayDiv.getBoundingClientRect();
+                visualizerCanvas.width = rect.width * dpr;
+                visualizerCanvas.height = rect.height * dpr;
+                canvasCtx.setTransform(1,0,0,1,0,0);
+                canvasCtx.scale(dpr, dpr);
+            }
 
-                let content = '';
-                for (let i = minFreq * 10; i <= maxFreq * 10; i++) {
-                    const isMajorTick = (i % 10 === 0);
-                    const isMediumTick = (i % 5 === 0);
-                    
-                    content += `<div class="relative flex flex-col items-center h-full justify-start pt-1" style="width: ${spacing}px;">`;
-                    if (isMajorTick) {
-                        content += `<span class="absolute top-6 text-sm font-semibold text-gray-200">${i / 10}</span>`;
-                        content += `<div class="w-0.5 h-4 bg-gray-300"></div>`;
-                    } else if (isMediumTick) {
-                        content += `<div class="w-px h-3 bg-gray-400"></div>`;
-                    } else {
-                        content += `<div class="w-px h-2 bg-gray-500"></div>`;
-                    }
-                    content += `</div>`;
+            function initAudioContext() {
+                if (isAudioContextInitialized) return;
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                source = audioContext.createMediaElementSource(audioPlayer);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                analyser.fftSize = 256;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                isAudioContextInitialized = true;
+                drawVisualizer();
+            }
+
+            function drawVisualizer() {
+                requestAnimationFrame(drawVisualizer);
+                if (!isAudioContextInitialized) return;
+                analyser.getByteFrequencyData(dataArray);
+                canvasCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+                const barWidth = (visualizerCanvas.width / (analyser.frequencyBinCount * 2));
+                let x = 0;
+                const station = getCurrentStation();
+                const strokeStyle = station ? station.theme.stroke : 'rgba(240, 255, 255, 0.7)';
+                canvasCtx.fillStyle = strokeStyle;
+                for (let i = 0; i < analyser.frequencyBinCount; i++) {
+                    const barHeight = (dataArray[i] / 255) * visualizerCanvas.height * 0.8;
+                    canvasCtx.fillRect(x, visualizerCanvas.height - barHeight, barWidth, barHeight);
+                    x += barWidth + 2;
                 }
-                dialTrack.innerHTML = content;
             }
 
-            function updateDial(frequency) {
-                const freq = parseFloat(frequency);
-                const minFreq = 87;
-                const spacing = 12; // Debe ser el mismo que en generateDialMarks
-
-                const positionInTrack = (freq - minFreq) * 10 * spacing;
-                const containerCenter = dialContainer.offsetWidth / 2;
-                const translationX = -positionInTrack + containerCenter;
-
-                dialTrack.style.transform = `translateX(${translationX}px)`;
-            }
-
-            // --- Funciones de control ---
-            function loadStation(index) {
-                const station = stations[index];
-                stationFreqEl.textContent = station.freq;
-                stationNameEl.textContent = station.name;
-                player.src = station.url;
-                updateDial(station.freq);
-                updateMediaSession();
-            }
-
-            function playStation() {
-                player.play().then(() => {
-                    isPlaying = true;
-                    updateUIOnPlay();
-                }).catch(error => {
-                    console.error("Error al reproducir:", error);
-                    isPlaying = false;
-                    updateUIOnPause();
-                });
-            }
-
-            function pauseStation() {
-                player.pause();
-                isPlaying = false;
-                updateUIOnPause();
-            }
-
-            // --- Actualizaciones de UI ---
-            function updateUIOnPlay() {
-                playIcon.classList.add('hidden');
-                pauseIcon.classList.remove('hidden');
-                airStatusDot.classList.remove('bg-gray-600');
-                airStatusDot.classList.add('bg-orange-500', 'on-air-pulse');
-                airStatusText.textContent = 'ON AIR';
-                airStatusText.classList.remove('text-gray-400');
-                airStatusText.classList.add('text-white');
-                playPauseBtn.classList.add('border-orange-500');
-            }
-
-            function updateUIOnPause() {
-                playIcon.classList.remove('hidden');
-                pauseIcon.classList.add('hidden');
-                airStatusDot.classList.add('bg-gray-600');
-                airStatusDot.classList.remove('bg-orange-500', 'on-air-pulse');
-                airStatusText.textContent = 'OFF AIR';
-                airStatusText.classList.add('text-gray-400');
-                airStatusText.classList.remove('text-white');
-                playPauseBtn.classList.remove('border-orange-500');
-            }
-
-            // --- Event Listeners ---
-            playPauseBtn.addEventListener('click', () => {
-                if (isPlaying) {
-                    pauseStation();
-                } else {
-                    playStation();
-                }
-            });
-
-            nextBtn.addEventListener('click', () => {
-                currentStationIndex = (currentStationIndex + 1) % stations.length;
-                loadStation(currentStationIndex);
-                if(isPlaying) playStation();
-            });
-
-            prevBtn.addEventListener('click', () => {
-                currentStationIndex = (currentStationIndex - 1 + stations.length) % stations.length;
-                loadStation(currentStationIndex);
-                if(isPlaying) playStation();
-            });
-            
-            sleepTimerBtn.addEventListener('click', () => {
-                // Si el temporizador ya está activo, lo cancelamos.
-                if (sleepTimerId) {
-                    clearTimeout(sleepTimerId);
-                    sleepTimerId = null;
-                    // La luna vuelve a su color gris original.
-                    sleepTimerBtn.classList.remove('text-orange-500');
-                    sleepTimerBtn.classList.add('text-gray-400');
-                } else {
-                    // Si no hay temporizador, activamos uno nuevo.
-                    // La luna se vuelve naranja para indicar que está activo.
-                    sleepTimerBtn.style.color = '#f97316';  // orange-500
-                    
-                    // Configuramos el temporizador para 30 minutos.
-                    sleepTimerId = setTimeout(() => {
-                        pauseStation(); // Detiene la música.
-                        sleepTimerId = null; // Reinicia el estado del temporizador.
-                        // La luna vuelve a su color original una vez cumplido el tiempo.
-                        sleepTimerBtn.style.color = '#9ca3af';  // gray-400
-                    }, 30 * 60 * 1000); // 30 minutos en milisegundos
-                }
-            });
-
-            // --- Media Session API ---
-            function updateMediaSession() {
-                if ('mediaSession' in navigator) {
-                    const station = stations[currentStationIndex];
-                    navigator.mediaSession.metadata = new MediaMetadata({
-                        title: station.freq,
-                        artist: station.name,
-                        album: 'Radio PWA',
-                        artwork: [
-                            { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
-                            { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
-                        ]
+            const removeAllThemes = () => {
+                const themes = ['cyan', 'blue', 'green', 'red'];
+                const elementsToClean = [displayDiv, mhzText, sliderPointer, playPauseButton, ...controls.querySelectorAll('button')];
+                elementsToClean.forEach(el => {
+                    themes.forEach(theme => {
+                        el.classList.remove(
+                            `from-${theme}-500`, `to-${theme}-700`,
+                            `text-${theme}-200`, `text-${theme}-300`,
+                            `${theme}-glow`,
+                            `border-t-${theme}-400`
+                        );
                     });
+                    el.classList.remove('bg-gradient-to-b');
+                });
+            };
+
+            const applyTheme = (station) => {
+                removeAllThemes();
+                const theme = station ? station.theme : state.stations[0].theme;
+                displayDiv.classList.add('bg-gradient-to-b', ...theme.bg.split(' '));
+                mhzText.classList.add(theme.text);
+                sliderPointer.classList.add(theme.pointer);
+                controls.querySelectorAll('button').forEach(btn => {
+                    btn.classList.add(theme.glow, `text-${theme.text.split('-')[1]}-300`);
+                });
+            };
+
+            const getCurrentStation = () => {
+                const freq = parseFloat(state.currentFrequency);
+                return state.stations.find(station => Math.abs(station.freq - freq) < 0.1);
+            };
+
+            const playCurrentStation = () => {
+                const station = getCurrentStation();
+                if (station) {
+                    audioPlayer.src = station.url;
+                    audioPlayer.play().catch(e => console.error("Error al reproducir audio:", e));
                 }
-            }
-            
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.setActionHandler('play', playStation);
-                navigator.mediaSession.setActionHandler('pause', pauseStation);
-                navigator.mediaSession.setActionHandler('previoustrack', () => prevBtn.click());
-                navigator.mediaSession.setActionHandler('nexttrack', () => nextBtn.click());
+            };
+            const pauseStation = () => { audioPlayer.pause(); audioPlayer.src = ""; };
+
+            const updateDisplay = () => {
+                const freq = parseFloat(state.currentFrequency).toFixed(1);
+                frequencyDisplay.textContent = freq;
+                const currentStation = getCurrentStation();
+                stationNameDisplay.textContent = currentStation ? currentStation.name : '---';
+                applyTheme(currentStation);
+            };
+
+            const updatePointerPosition = () => {
+                const min = parseFloat(frequencySlider.min);
+                const max = parseFloat(frequencySlider.max);
+                const val = parseFloat(state.currentFrequency);
+                const percentage = ((val - min) * 100) / (max - min);
+                document.getElementById('slider-pointer').style.left = percentage + '%';
+            };
+
+            const togglePower = () => {
+                const wasPlaying = state.isPlaying;
+                state.isOn = !state.isOn;
+                if (!state.isOn && wasPlaying) togglePlayPause();
+                document.getElementById('radio-container').classList.toggle('is-off', !state.isOn);
+            };
+
+            const togglePlayPause = () => {
+                if (!state.isOn) return;
+                if (!isAudioContextInitialized) initAudioContext();
+                if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+                state.isPlaying = !state.isPlaying;
+                playIcon.classList.toggle('hidden', state.isPlaying);
+                pauseIcon.classList.toggle('hidden', !state.isPlaying);
+                document.getElementById('radio-container').classList.toggle('is-playing', state.isPlaying);
+                if (state.isPlaying) playCurrentStation(); else pauseStation();
+            };
+
+            const handleSliderChange = (event) => {
+                state.currentFrequency = event.target.value;
+                updateDisplay();
+                updatePointerPosition();
+                if (state.isPlaying) {
+                    clearTimeout(window.sliderTimeout);
+                    window.sliderTimeout = setTimeout(playCurrentStation, 250);
+                }
+            };
+
+            const scan = (direction) => {
+                const currentFreq = parseFloat(state.currentFrequency);
+                let list = state.stations.filter(s => direction === 'up' ? s.freq > currentFreq : s.freq < currentFreq);
+                list.sort((a, b) => direction === 'up' ? a.freq - b.freq : b.freq - a.freq);
+                let nextStation = list[0];
+                if (!nextStation) {
+                    nextStation = direction === 'up' 
+                        ? [...state.stations].sort((a,b)=>a.freq-b.freq)[0]
+                        : [...state.stations].sort((a,b)=>b.freq-a>b.freq? -1:1)[0];
+                }
+                state.currentFrequency = nextStation.freq;
+                frequencySlider.value = state.currentFrequency;
+                updateDisplay();
+                updatePointerPosition();
+                if (state.isPlaying) playCurrentStation();
+            };
+
+            document.getElementById('scan-up').addEventListener('click', () => scan('up'));
+            document.getElementById('scan-down').addEventListener('click', () => scan('down'));
+            document.getElementById('btn-next').addEventListener('click', () => scan('up'));
+            document.getElementById('btn-prev').addEventListener('click', () => scan('down'));
+            document.getElementById('power-button').addEventListener('click', togglePower);
+            document.getElementById('play-pause-button').addEventListener('click', togglePlayPause);
+            document.getElementById('frequency-slider').addEventListener('input', handleSliderChange);
+            window.addEventListener('resize', setupCanvas);
+
+            // Install prompt
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                state.deferredPrompt = e;
+            });
+            let lastTap = 0;
+            titleInstall.addEventListener('click', async () => {
+                const now = Date.now();
+                if (now - lastTap < 400 && state.deferredPrompt) {
+                    state.deferredPrompt.prompt();
+                    await state.deferredPrompt.userChoice;
+                    state.deferredPrompt = null;
+                }
+                lastTap = now;
+            });
+
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(console.error);
             }
 
-            // --- Inicialización ---
-            generateDialMarks();
-            loadStation(currentStationIndex);
+            const init = () => {
+                document.getElementById('frequency-slider').value = state.currentFrequency;
+                updateDisplay();
+                updatePointerPosition();
+                setupCanvas();
+            };
+            init();
         });
     </script>
-
-<script>
-  // Prompt PWA install if supported (no UI changes).
-  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.__deferredPrompt = e; });
-  // If launched in browser, try requestFullscreen on first user interaction.
-  document.addEventListener('click', () => {
-    const docEl = document.documentElement;
-    if (!document.fullscreenElement && docEl.requestFullscreen) {
-      // Best-effort; browsers block if not allowed. No UI change if it fails.
-      docEl.requestFullscreen().catch(()=>{});
-    }
-  }, { once: true });
-</script>
-
 </body>
 </html>
-
