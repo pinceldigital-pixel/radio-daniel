@@ -55,6 +55,7 @@
         }
         
         .status-display {
+            position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -64,7 +65,7 @@
             font-size: 1.2rem;
             color: var(--secondary-text-color);
             height: 50px;
-            margin-bottom: 20px; /* Espacio añadido */
+            margin-bottom: 20px;
         }
 
         .status-dot {
@@ -79,6 +80,30 @@
             background-color: var(--accent-color);
             animation: pulse 1.5s infinite ease-in-out;
         }
+        
+        #sleep-timer-button {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+        }
+
+        #sleep-timer-button img {
+            width: 28px;
+            height: 28px;
+            filter: invert(80%) brightness(0.8); /* Lo hace blanco-grisáceo */
+            transition: filter 0.3s ease;
+        }
+
+        #sleep-timer-button.timer-active img {
+            /* Filtro para convertir la imagen a color amarillo */
+            filter: invert(85%) sepia(40%) saturate(5000%) hue-rotate(350deg) brightness(105%) contrast(101%);
+        }
+
 
         @keyframes pulse {
             0%, 100% { box-shadow: 0 0 5px 0px var(--accent-color); }
@@ -89,9 +114,9 @@
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            justify-content: space-around; /* Modificado para centrar el contenido */
+            justify-content: space-around; 
             align-items: center;
-            padding-bottom: 30px; /* Modificación: Sube el contenido */
+            padding-bottom: 30px; 
         }
 
         .station-frequency {
@@ -108,7 +133,6 @@
         }
 
         .visualizer-container {
-            /* Ya no está posicionado de forma absoluta */
             width: 100%;
             height: 60px;
             display: flex;
@@ -217,9 +241,11 @@
         <header class="status-display">
             <span id="status-text">OFF AIR</span>
             <div id="status-dot" class="status-dot"></div>
+            <button id="sleep-timer-button" aria-label="Sleep Timer">
+                <img src="1000067018.png" alt="">
+            </button>
         </header>
 
-        <!-- El dial ahora está aquí arriba -->
         <div class="dial-container">
             <div class="needle"></div>
             <div id="dial" class="dial"></div>
@@ -270,6 +296,7 @@
             let currentStationIndex = 0;
             let isPlaying = false;
             let audioContext, analyser, source;
+            let sleepTimer = null;
 
             const audioPlayer = document.getElementById('audio-player');
             const stationFrequencyEl = document.getElementById('station-frequency');
@@ -284,6 +311,7 @@
             const statusDotEl = document.getElementById('status-dot');
             const canvas = document.getElementById('visualizer');
             const canvasCtx = canvas.getContext('2d');
+            const sleepTimerButton = document.getElementById('sleep-timer-button');
 
             function init() {
                 registerServiceWorker();
@@ -350,6 +378,21 @@
             function togglePlayPause() {
                 if (!audioContext) setupAudioContext();
                 isPlaying ? audioPlayer.pause() : playCurrentStation();
+            }
+
+            function toggleSleepTimer() {
+                if (sleepTimer) {
+                    clearTimeout(sleepTimer);
+                    sleepTimer = null;
+                    sleepTimerButton.classList.remove('timer-active');
+                } else {
+                    sleepTimerButton.classList.add('timer-active');
+                    sleepTimer = setTimeout(() => {
+                        audioPlayer.pause();
+                        sleepTimer = null;
+                        sleepTimerButton.classList.remove('timer-active');
+                    }, 30 * 60 * 1000); // 30 minutos
+                }
             }
             
             function moveDial(frequency) {
@@ -424,6 +467,7 @@
                 playPauseButton.addEventListener('click', togglePlayPause);
                 nextButton.addEventListener('click', () => changeStation(1));
                 prevButton.addEventListener('click', () => changeStation(-1));
+                sleepTimerButton.addEventListener('click', toggleSleepTimer);
                 audioPlayer.addEventListener('play', () => updatePlayPauseUI(true));
                 audioPlayer.addEventListener('pause', () => updatePlayPauseUI(false));
                 window.addEventListener('resize', setupCanvas);

@@ -1,20 +1,21 @@
 {
 "name": "Radio PWA",
 "short_name": "Radio",
-"description": "Aplicación de Radio PWA con dial animado y controles multimedia.",
-"start_url": "index.html",
+"description": "Una aplicación de radio PWA con un dial animado.",
+"start_url": ".",
 "display": "standalone",
 "background_color": "#121212",
 "theme_color": "#121212",
+"orientation": "portrait-primary",
 "icons": [
 {
-"src": "https://www.google.com/search?q=https://placehold.co/192x192/1e1e1e/ffffff%3Ftext%3DRadio",
+"src": "9801466.png",
 "sizes": "192x192",
 "type": "image/png",
 "purpose": "any maskable"
 },
 {
-"src": "https://www.google.com/search?q=https://placehold.co/512x512/1e1e1e/ffffff%3Ftext%3DRadio",
+"src": "9801466.png",
 "sizes": "512x512",
 "type": "image/png",
 "purpose": "any maskable"
