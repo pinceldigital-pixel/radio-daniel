@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#121212">
     <meta name="description" content="Aplicación de Radio PWA con dial animado.">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/1e1e1e/ffffff?text=Radio">
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;700;900&display=swap');
@@ -361,7 +361,9 @@
                 pauseIcon.style.display = isPlaying ? 'block' : 'none';
                 statusTextEl.textContent = isPlaying ? 'ON AIR' : 'OFF AIR';
                 statusDotEl.classList.toggle('playing', isPlaying);
-                navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+                if ('mediaSession' in navigator) {
+                    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+                }
             }
 
             function setupAudioContext() {
@@ -382,6 +384,7 @@
                 const rect = canvas.getBoundingClientRect();
                 canvas.width = rect.width * dpr;
                 canvas.height = rect.height * dpr;
+                canvasCtx.scale(dpr, dpr);
             }
             
             function draw() {
@@ -390,8 +393,12 @@
             }
 
             function drawVisualizer() {
-                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                const width = canvas.clientWidth;
+                const height = canvas.clientHeight;
+                canvasCtx.clearRect(0, 0, width, height);
+
                 if (!analyser || !isPlaying) return;
+                
                 const bufferLength = analyser.frequencyBinCount;
                 const dataArray = new Uint8Array(bufferLength);
                 analyser.getByteTimeDomainData(dataArray);
@@ -399,15 +406,15 @@
                 canvasCtx.lineWidth = 2;
                 canvasCtx.strokeStyle = visualizerColors[currentStationIndex];
                 canvasCtx.beginPath();
-                const sliceWidth = canvas.width * 1.0 / bufferLength;
+                const sliceWidth = width * 1.0 / bufferLength;
                 let x = 0;
                 for (let i = 0; i < bufferLength; i++) {
                     const v = dataArray[i] / 128.0;
-                    const y = v * canvas.height / 2;
+                    const y = v * height / 2;
                     i === 0 ? canvasCtx.moveTo(x, y) : canvasCtx.lineTo(x, y);
                     x += sliceWidth;
                 }
-                canvasCtx.lineTo(canvas.width, canvas.height / 2);
+                canvasCtx.lineTo(width, height / 2);
                 canvasCtx.stroke();
             }
 
@@ -420,12 +427,13 @@
                 window.addEventListener('resize', setupCanvas);
             }
 
-            // --- PWA & Media Session ---
             function registerServiceWorker() {
                 if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('service-worker.js')
-                        .then(registration => console.log('Service Worker registered with scope:', registration.scope))
-                        .catch(error => console.error('Service Worker registration failed:', error));
+                    window.addEventListener('load', () => {
+                        navigator.serviceWorker.register('service-worker.js')
+                            .then(registration => console.log('Service Worker registered with scope:', registration.scope))
+                            .catch(error => console.error('Service Worker registration failed:', error));
+                    });
                 }
             }
 
@@ -447,10 +455,7 @@
                         album: 'Radio PWA',
                         artwork: [
                             { src: 'https://placehold.co/96x96/1e1e1e/ffffff?text=Radio', sizes: '96x96', type: 'image/png' },
-                            { src: 'https://placehold.co/128x128/1e1e1e/ffffff?text=Radio', sizes: '128x128', type: 'image/png' },
                             { src: 'https://placehold.co/192x192/1e1e1e/ffffff?text=Radio', sizes: '192x192', type: 'image/png' },
-                            { src: 'https://placehold.co/256x256/1e1e1e/ffffff?text=Radio', sizes: '256x256', type: 'image/png' },
-                            { src: 'https://placehold.co/384x384/1e1e1e/ffffff?text=Radio', sizes: '384x384', type: 'image/png' },
                             { src: 'https://placehold.co/512x512/1e1e1e/ffffff?text=Radio', sizes: '512x512', type: 'image/png' },
                         ]
                     });

@@ -1,13 +1,9 @@
-const CACHE_NAME = 'radio-pwa-cache-v1';
+const CACHE_NAME = 'radio-pwa-cache-v2';
 const urlsToCache = [
   '/',
-  'index.html',
-  'manifest.json'
-  // No es necesario cachear los iconos de placehold.co
-  // No es necesario cachear la fuente de Google Fonts, el navegador lo gestiona bien
+  'index.html'
 ];
 
-// Instalar el Service Worker y cachear los archivos de la app
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -16,19 +12,30 @@ self.addEventListener('install', event => {
         return cache.addAll(urlsToCache);
       })
   );
+  self.skipWaiting();
 });
 
-// Interceptar las peticiones y servir desde la caché si es posible
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  return self.clients.claim();
+});
+
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Si la respuesta está en la caché, la retornamos
-        if (response) {
-          return response;
-        }
-        // Si no, hacemos la petición a la red
-        return fetch(event.request);
+        return response || fetch(event.request);
       }
     )
   );
