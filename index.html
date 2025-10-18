@@ -20,7 +20,7 @@
             --accent-color: #ff4136;
             --dial-line-color: #555;
             --needle-color: #ff4136;
-            --sleep-timer-active-color: #28a745; /* Nuevo color para el sleep timer activo */
+            --sleep-timer-active-color: #FF0000; /* Color rojo para el sleep timer activo */
         }
 
         html, body {
@@ -49,7 +49,7 @@
             justify-content: space-between;
             padding: 30px 20px;
             box-sizing: border-box;
-            position: relative;
+            position: relative; /* Para posicionar la luna */
             z-index: 1;
             background: transparent;
         }
@@ -86,6 +86,34 @@
             50% { box-shadow: 0 0 15px 5px var(--accent-color); }
         }
 
+        .sleep-timer-top-button { /* Nuevo estilo para la luna arriba a la derecha */
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--primary-text-color);
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: color 0.2s ease, transform 0.1s ease;
+            z-index: 100; /* Asegurar que esté por encima de todo */
+        }
+        .sleep-timer-top-button:active {
+            transform: scale(0.95);
+        }
+        .sleep-timer-top-button svg {
+            width: 28px;
+            height: 28px;
+            fill: currentColor;
+        }
+        .sleep-timer-top-button.active {
+            color: var(--sleep-timer-active-color);
+        }
+
         .station-display {
             flex-grow: 1;
             display: flex;
@@ -106,6 +134,13 @@
             font-size: 1.2rem;
             color: var(--secondary-text-color);
             margin-top: 5px;
+        }
+
+        .now-playing-info { /* Nuevo estilo para la información de la música */
+            font-size: 0.9rem;
+            color: var(--secondary-text-color);
+            margin-top: 10px;
+            min-height: 20px; /* Para mantener el espacio aunque no haya info */
         }
 
         .visualizer-container {
@@ -174,7 +209,7 @@
         
         .controls {
             display: flex;
-            justify-content: space-around;
+            justify-content: space-around; 
             align-items: center;
             background-color: var(--surface-color);
             border-radius: 50px;
@@ -209,10 +244,6 @@
             color: white;
             transform: scale(1.1);
         }
-
-        .sleep-timer-button.active {
-            color: var(--sleep-timer-active-color);
-        }
     </style>
 </head>
 <body>
@@ -224,6 +255,12 @@
             <div id="status-dot" class="status-dot"></div>
             </header>
 
+        <button id="sleep-timer-button" class="sleep-timer-top-button" aria-label="Sleep Timer">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.002 5.002 0 00-6.73-6.73c-.44-.06-.9-.1-1.36-.1zM12 5a7 7 0 110 14c-1.85 0-3.55-.65-4.88-1.74a.5.5 0 01-.12-.66c.21-.36.65-.47 1.01-.26.96.56 2.06.87 3.2.87 3.86 0 7-3.14 7-7s-3.14-7-7-7z"/>
+            </svg>
+        </button>
+
         <div class="dial-container">
             <div class="needle"></div>
             <div id="dial" class="dial"></div>
@@ -233,7 +270,7 @@
             <div>
                 <h1 id="station-frequency" class="station-frequency">80s</h1>
                 <p id="station-name" class="station-name">Awesome 80s</p>
-            </div>
+                <p id="now-playing-info" class="now-playing-info"></p> </div>
             <div class="visualizer-container">
                 <canvas id="visualizer"></canvas>
             </div>
@@ -247,4 +284,334 @@
                 <svg id="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 <svg id="pause-icon" viewBox="0 0 24 24" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
             </button>
-            <button id="next-button" class="control-button" aria-label
+            <button id="next-button" class="control-button" aria-label="Next Station">
+                 <svg viewBox="0 0 24 24"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/></svg>
+            </button>
+        </footer>
+    </div>
+    
+    <audio id="audio-player" crossorigin="anonymous"></audio>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const stations = [
+                { name: "Awesome 80s", freq: "80s", url: "http://listen.181fm.com/181-awesome80s_128k.mp3" },
+                { name: "Power 90s", freq: "90s", url: "https://live.powerhitz.com/90sarea" },
+                { name: "2000s Hits", freq: "00s", url: "https://streaming.live365.com/a48930" },
+                { name: "Blue", freq: "100.7", url: "https://27693.live.streamtheworld.com/BLUE_FM_100_7AAC.aac" },
+                { name: "Aspen", freq: "102.3", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3" },
+                { name: "LN+", freq: "104.9", url: "https://stream.radio.co/s2ed3bec0a/listen" }
+            ];
+
+            const visualizerColors = ['#ff4136', '#36a2eb', '#4bc0c0', '#ffce56', '#9966ff', '#ff9f40'];
+
+            const minFreq = 95.0;
+            const maxFreq = 108.0;
+            const dialRange = maxFreq - minFreq;
+            const tickSpacing = 30;
+
+            let currentStationIndex = 0;
+            let isPlaying = false;
+            let audioContext, analyser, source;
+            let sleepTimeout = null; 
+
+            const audioPlayer = document.getElementById('audio-player');
+            const stationFrequencyEl = document.getElementById('station-frequency');
+            const stationNameEl = document.getElementById('station-name');
+            const nowPlayingInfoEl = document.getElementById('now-playing-info'); // Nuevo elemento para la info de la canción
+            const playPauseButton = document.getElementById('play-pause-button');
+            const playIcon = document.getElementById('play-icon');
+            const pauseIcon = document.getElementById('pause-icon');
+            const nextButton = document.getElementById('next-button');
+            const prevButton = document.getElementById('prev-button');
+            const dialEl = document.getElementById('dial');
+            const statusTextEl = document.getElementById('status-text');
+            const statusDotEl = document.getElementById('status-dot');
+            const canvas = document.getElementById('visualizer');
+            const canvasCtx = canvas.getContext('2d');
+            const sleepTimerButton = document.getElementById('sleep-timer-button'); 
+
+            function init() {
+                registerServiceWorker();
+                setupMediaSession();
+                
+                const initialColor = visualizerColors[currentStationIndex];
+                document.documentElement.style.setProperty('--accent-color', initialColor);
+                document.documentElement.style.setProperty('--needle-color', initialColor);
+
+                generateDial();
+                updateStationInfo();
+                setupEventListeners();
+                setupCanvas();
+                draw();
+            }
+
+            function generateDial() {
+                const dialWidth = (dialRange / 0.1) * tickSpacing;
+                dialEl.style.width = `${dialWidth}px`;
+                let fragment = document.createDocumentFragment();
+                for (let i = 0; i <= dialRange * 10; i++) {
+                    const freq = minFreq + (i * 0.1);
+                    const tick = document.createElement('div');
+                    tick.className = 'dial-tick';
+                    if (Math.abs(freq - Math.round(freq)) < 0.01) {
+                        tick.classList.add('major');
+                        const label = document.createElement('span');
+                        label.className = 'dial-tick-label';
+                        label.textContent = Math.round(freq);
+                        tick.appendChild(label);
+                    } else if (i % 5 === 0) {
+                        tick.classList.add('minor');
+                    } else {
+                        tick.classList.add('sub-minor');
+                    }
+                    fragment.appendChild(tick);
+                }
+                dialEl.appendChild(fragment);
+            }
+            
+            function updateStationInfo() {
+                const station = stations[currentStationIndex];
+                stationFrequencyEl.textContent = station.freq;
+                stationNameEl.textContent = station.name;
+                nowPlayingInfoEl.textContent = ''; // Limpiar la info de la canción al cambiar de estación
+                
+                const freqNum = parseFloat(station.freq);
+                if (!isNaN(freqNum) && freqNum >= minFreq && freqNum <= maxFreq) {
+                    moveDial(freqNum);
+                    dialEl.style.opacity = 1;
+                } else {
+                    moveDial(minFreq + (dialRange / 2));
+                    dialEl.style.opacity = 0.3;
+                }
+                
+                updateMediaSession();
+            }
+
+            function changeStation(direction) {
+                currentStationIndex = (currentStationIndex + direction + stations.length) % stations.length;
+                const newColor = visualizerColors[currentStationIndex];
+                document.documentElement.style.setProperty('--accent-color', newColor);
+                document.documentElement.style.setProperty('--needle-color', newColor);
+                updateStationInfo();
+                if (isPlaying) playCurrentStation();
+            }
+
+            function playCurrentStation() {
+                const station = stations[currentStationIndex];
+                
+                if (window.location.protocol === 'https:' && station.url.startsWith('http://')) {
+                    console.warn(`[Radio PWA] ADVERTENCIA: Intentando cargar un stream HTTP (${station.url}) en una página HTTPS. El navegador probablemente lo bloqueará por "Contenido Mixto".`);
+                }
+
+                audioPlayer.src = station.url;
+                audioPlayer.play().catch(e => console.error("Error playing audio:", e));
+            }
+            
+            function togglePlayPause() {
+                if (!audioContext) setupAudioContext();
+                isPlaying ? audioPlayer.pause() : playCurrentStation();
+            }
+
+            function toggleSleepTimer() {
+                if (sleepTimeout) {
+                    clearTimeout(sleepTimeout);
+                    sleepTimeout = null;
+                    sleepTimerButton.classList.remove('active');
+                    console.log("Sleep Timer cancelado.");
+                } else {
+                    const sleepTimeMinutes = 30;
+                    sleepTimeout = setTimeout(() => {
+                        audioPlayer.pause();
+                        if (sleepTimeout) { 
+                             clearTimeout(sleepTimeout);
+                             sleepTimeout = null;
+                             sleepTimerButton.classList.remove('active');
+                        }
+                        console.log("Sleep Timer activado: Audio pausado.");
+                    }, sleepTimeMinutes * 60 * 1000); 
+                    sleepTimerButton.classList.add('active');
+                    console.log(`Sleep Timer establecido para ${sleepTimeMinutes} minutos.`);
+                }
+            }
+
+            function moveDial(frequency) {
+                const totalOffset = ((frequency - minFreq) / 0.1) * tickSpacing;
+                dialEl.style.transform = `translateX(-${totalOffset}px)`;
+            }
+
+            function updatePlayPauseUI(playing) {
+                isPlaying = playing;
+                playIcon.style.display = isPlaying ? 'none' : 'block';
+                pauseIcon.style.display = isPlaying ? 'block' : 'none';
+                statusTextEl.textContent = isPlaying ? 'ON AIR' : 'OFF AIR';
+                statusDotEl.classList.toggle('playing', isPlaying);
+                if ('mediaSession' in navigator) {
+                    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+                }
+            }
+
+            function setupAudioContext() {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    source = audioContext.createMediaElementSource(audioPlayer);
+                    source.connect(analyser);
+                    analyser.connect(audioContext.destination);
+                    analyser.fftSize = 2048; 
+                } catch (e) {
+                    console.error("Web Audio API not supported", e);
+                }
+            }
+
+            function setupCanvas() {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                canvasCtx.scale(dpr, dpr);
+            }
+            
+            function draw() {
+                requestAnimationFrame(draw);
+                drawVisualizer();
+            }
+
+            function drawVisualizer() {
+                const width = canvas.clientWidth;
+                const height = canvas.clientHeight;
+                canvasCtx.clearRect(0, 0, width, height);
+
+                if (!analyser || !isPlaying) return;
+                
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                analyser.getByteTimeDomainData(dataArray);
+
+                canvasCtx.lineWidth = 2;
+                canvasCtx.strokeStyle = visualizerColors[currentStationIndex];
+                canvasCtx.beginPath();
+                const sliceWidth = width * 1.0 / bufferLength;
+                let x = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0;
+                    const y = v * height / 2;
+                    i === 0 ? canvasCtx.moveTo(x, y) : canvasCtx.lineTo(x, y);
+                    x += sliceWidth;
+                }
+                canvasCtx.lineTo(width, height / 2);
+                canvasCtx.stroke();
+            }
+
+            function setupEventListeners() {
+                playPauseButton.addEventListener('click', togglePlayPause);
+                nextButton.addEventListener('click', () => changeStation(1));
+                prevButton.addEventListener('click', () => changeStation(-1));
+                sleepTimerButton.addEventListener('click', toggleSleepTimer);
+                audioPlayer.addEventListener('play', () => {
+                    updatePlayPauseUI(true);
+                    // Aquí intentamos leer metadatos si el navegador lo soporta
+                    getNowPlayingMetadata(); 
+                });
+                audioPlayer.addEventListener('pause', () => updatePlayPauseUI(false));
+                audioPlayer.addEventListener('ended', () => updatePlayPauseUI(false)); // Por si el stream termina
+                window.addEventListener('resize', setupCanvas);
+            }
+
+            function registerServiceWorker() {
+                if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', () => {
+                        navigator.serviceWorker.register('service-worker.js')
+                            .then(registration => console.log('Service Worker registered with scope:', registration.scope))
+                            .catch(error => console.error('Service Worker registration failed:', error));
+                    });
+                }
+                
+                if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator.standalone)) {
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        for(let registration of registrations) {
+                            registration.update();
+                            console.log('Service Worker cache updated.');
+                        }
+                    });
+                }
+            }
+
+            function setupMediaSession() {
+                if ('mediaSession' in navigator) {
+                    navigator.mediaSession.setActionHandler('play', togglePlayPause);
+                    navigator.mediaSession.setActionHandler('pause', togglePlayPause);
+                    navigator.mediaSession.setActionHandler('previoustrack', () => changeStation(-1));
+                    navigator.mediaSession.setActionHandler('nexttrack', () => changeStation(1));
+                }
+            }
+
+            function updateMediaSession(trackTitle = null) {
+                if ('mediaSession' in navigator) {
+                    const station = stations[currentStationIndex];
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: trackTitle || station.name, // Usa el título de la canción si está disponible
+                        artist: station.freq,
+                        album: 'Radio PWA',
+                        artwork: [
+                            { src: '9801466.png', sizes: '192x192', type: 'image/png' },
+                            { src: '9801466.png', sizes: '512x512', type: 'image/png' },
+                        ]
+                    });
+                }
+            }
+
+            // *** Nueva función para obtener metadatos de "Now Playing" ***
+            function getNowPlayingMetadata() {
+                nowPlayingInfoEl.textContent = ''; // Limpiar previo
+
+                // Esto funciona mejor para streams con metadatos ID3 o ICY
+                // Sin embargo, el AudioContext no expone directamente los metadatos de texto
+                // Para streams Shoutcast/Icecast, a menudo los metadatos se envían por fuera del stream de audio
+                // o necesitan un proxy que los parsee.
+
+                // Por ahora, una aproximación sería la MediaSession API si la radio la usa,
+                // o si la estación ofrece una API JSON para "now playing".
+                // Dado que no tenemos una API para las estaciones, nos basamos en lo que pueda inferir MediaSession.
+
+                if ('mediaSession' in navigator && navigator.mediaSession.metadata) {
+                    const metadata = navigator.mediaSession.metadata;
+                    // Intentamos usar el título de la MediaSession si es diferente al nombre de la estación
+                    if (metadata.title && metadata.title !== stations[currentStationIndex].name) {
+                        nowPlayingInfoEl.textContent = metadata.title;
+                    } else if (audioPlayer.mediaKeys && audioPlayer.mediaKeys.status === 'playing' && audioPlayer.textTracks) {
+                        // Algunas implementaciones de streams pueden usar text tracks para metadatos
+                        // Esto es más complejo y no universal
+                        for (let i = 0; i < audioPlayer.textTracks.length; i++) {
+                            const track = audioPlayer.textTracks[i];
+                            if (track.kind === 'metadata' || track.label === 'lyrics' || track.label === 'chapter') {
+                                track.mode = 'showing'; // Intentar activar el track
+                                track.addEventListener('cuechange', function() {
+                                    if (this.activeCues && this.activeCues.length > 0) {
+                                        let text = this.activeCues[0].text;
+                                        // A veces viene en formato "artist - title"
+                                        if (text && text.toLowerCase().includes(' - ')) {
+                                            nowPlayingInfoEl.textContent = text;
+                                            updateMediaSession(text);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // Para streams que usan encabezados ICY (Icecast/Shoutcast), se necesitaría un proxy.
+                // Sin un proxy o una API de la radio, es difícil acceder a esos metadatos directamente del cliente.
+                // Mantendremos esto simple por ahora, confiando en MediaSession o metadatos de track.
+                
+                // Si tienes acceso a una API de "now playing" para alguna de las radios,
+                // este sería el lugar para hacer un fetch y actualizar nowPlayingInfoEl.textContent.
+            }
+
+
+            init();
+        });
+    </script>
+</body>
+</html>
