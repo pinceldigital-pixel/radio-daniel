@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio PWA</title>
+    <meta name="theme-color" content="#121212">
+    <meta name="description" content="Aplicación de Radio PWA con dial animado.">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="9801466.png">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;700;900&display=swap');
+
+        :root {
+            --background-color: #121212;
+            --surface-color: #1e1e1e;
+            --primary-text-color: #e0e0e0;
+            --secondary-text-color: #a0a0a0;
+            --accent-color: #ff4136;
+            --dial-line-color: #555;
+            --needle-color: #ff4136;
+            --sleep-timer-active-color: #28a745; /* Nuevo color para el sleep timer activo */
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            overscroll-behavior: contain;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--primary-text-color);
+            font-family: 'Nunito Sans', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .radio-container {
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px 20px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 1;
+            background: transparent;
+        }
+        
+        .status-display {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 2px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--secondary-text-color);
+            height: 50px;
+            margin-bottom: 20px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #444;
+            transition: background-color 0.5s ease;
+        }
+
+        .status-dot.playing {
+            background-color: var(--accent-color);
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 5px 0px var(--accent-color); }
+            50% { box-shadow: 0 0 15px 5px var(--accent-color); }
+        }
+
+        .station-display {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around; 
+            align-items: center;
+            padding-bottom: 30px; 
+        }
+
+        .station-frequency {
+            font-size: 5rem;
+            font-weight: 900;
+            margin: 0;
+            color: var(--primary-text-color);
+        }
+
+        .station-name {
+            font-size: 1.2rem;
+            color: var(--secondary-text-color);
+            margin-top: 5px;
+        }
+
+        .visualizer-container {
+            width: 100%;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+        #visualizer {
+            width: 90%;
+            height: 100%;
+        }
+
+        .dial-container {
+            width: 100%;
+            position: relative;
+            height: 80px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .dial {
+            position: absolute;
+            left: 50%;
+            top: 40px;
+            height: 40px;
+            display: flex;
+            align-items: flex-start;
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease;
+            opacity: 1;
+        }
+
+        .dial-tick {
+            width: 2px;
+            margin: 0 14px;
+            background-color: var(--dial-line-color);
+            position: relative;
+        }
+
+        .dial-tick.major { height: 25px; }
+        .dial-tick.minor { height: 15px; }
+        .dial-tick.sub-minor { height: 10px; }
+
+        .dial-tick-label {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: var(--secondary-text-color);
+        }
+
+        .needle {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 9px;
+            height: 80px;
+            background: linear-gradient(to top, var(--needle-color), transparent);
+            transform-origin: bottom center;
+            z-index: 10;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: var(--surface-color);
+            border-radius: 50px;
+            padding: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .control-button {
+            background: none;
+            border: none;
+            color: var(--primary-text-color);
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s ease, transform 0.1s ease, color 0.2s ease;
+        }
+        .control-button:active {
+            transform: scale(0.95);
+        }
+
+        .control-button svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+        
+        .play-pause-button {
+            background-color: var(--accent-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .sleep-timer-button.active {
+            color: var(--sleep-timer-active-color);
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="radio-container">
+        
+        <header class="status-display">
+            <span id="status-text">OFF AIR</span>
+            <div id="status-dot" class="status-dot"></div>
+            </header>
+
+        <div class="dial-container">
+            <div class="needle"></div>
+            <div id="dial" class="dial"></div>
+        </div>
+
+        <main class="station-display">
+            <div>
+                <h1 id="station-frequency" class="station-frequency">80s</h1>
+                <p id="station-name" class="station-name">Awesome 80s</p>
+            </div>
+            <div class="visualizer-container">
+                <canvas id="visualizer"></canvas>
+            </div>
+        </main>
+
+        <footer class="controls">
+            <button id="prev-button" class="control-button" aria-label="Previous Station">
+                <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </button>
+            <button id="play-pause-button" class="control-button play-pause-button" aria-label="Play">
+                <svg id="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <svg id="pause-icon" viewBox="0 0 24 24" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+            <button id="next-button" class="control-button" aria-label
