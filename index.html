@@ -49,7 +49,7 @@
             justify-content: space-between;
             padding: 30px 20px;
             box-sizing: border-box;
-            position: relative; /* Para posicionar la luna */
+            position: relative; 
             z-index: 1;
             background: transparent;
         }
@@ -86,39 +86,45 @@
             50% { box-shadow: 0 0 15px 5px var(--accent-color); }
         }
 
-        .sleep-timer-top-button { /* Nuevo estilo para la luna arriba a la derecha */
+        .sleep-timer-top-button {
             position: absolute;
             top: 20px;
             right: 20px;
             background: none;
             border: none;
-            color: var(--primary-text-color);
             cursor: pointer;
             padding: 10px;
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: color 0.2s ease, transform 0.1s ease;
-            z-index: 100; /* Asegurar que esté por encima de todo */
+            z-index: 100;
         }
         .sleep-timer-top-button:active {
             transform: scale(0.95);
         }
-        .sleep-timer-top-button svg {
+
+        /* Estilo para la imagen de la luna */
+        .sleep-timer-top-button img {
             width: 28px;
             height: 28px;
-            fill: currentColor;
+            /* Filtro para hacerla blanca (asumiendo que es negra/colorida) o gris claro si ya es blanca */
+            filter: invert(90%) sepia(10%) saturate(100%) hue-rotate(180deg) brightness(100%) contrast(90%);
+            transition: filter 0.3s ease;
         }
-        .sleep-timer-top-button.active {
-            color: var(--sleep-timer-active-color);
+
+        /* Estilo para la luna activa (roja) */
+        .sleep-timer-top-button.active img {
+            /* Este filtro convierte una imagen blanca/gris a rojo */
+            filter: invert(15%) sepia(90%) saturate(7000%) hue-rotate(350deg) brightness(100%) contrast(110%);
         }
+
 
         .station-display {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            justify-content: space-around; 
+            justify-content: center; /* Centra el texto verticalmente */
             align-items: center;
             padding-bottom: 30px; 
         }
@@ -136,21 +142,23 @@
             margin-top: 5px;
         }
 
-        .now-playing-info { /* Nuevo estilo para la información de la música */
+        .now-playing-info { 
             font-size: 0.9rem;
             color: var(--secondary-text-color);
             margin-top: 10px;
-            min-height: 20px; /* Para mantener el espacio aunque no haya info */
+            min-height: 20px; 
         }
 
+        /* Visualizador movido fuera del 'main' */
         .visualizer-container {
             width: 100%;
-            height: 60px;
+            height: 100px; /* Aumentamos la altura para las barras */
             display: flex;
             justify-content: center;
             align-items: center;
             pointer-events: none;
             opacity: 0.8;
+            margin-bottom: 20px; /* Espacio antes de los controles */
         }
         #visualizer {
             width: 90%;
@@ -253,12 +261,10 @@
         <header class="status-display">
             <span id="status-text">OFF AIR</span>
             <div id="status-dot" class="status-dot"></div>
-            </header>
+        </header>
 
         <button id="sleep-timer-button" class="sleep-timer-top-button" aria-label="Sleep Timer">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.002 5.002 0 00-6.73-6.73c-.44-.06-.9-.1-1.36-.1zM12 5a7 7 0 110 14c-1.85 0-3.55-.65-4.88-1.74a.5.5 0 01-.12-.66c.21-.36.65-.47 1.01-.26.96.56 2.06.87 3.2.87 3.86 0 7-3.14 7-7s-3.14-7-7-7z"/>
-            </svg>
+            <img src="crescent-moon-png-21.png" alt="Sleep Timer">
         </button>
 
         <div class="dial-container">
@@ -270,11 +276,13 @@
             <div>
                 <h1 id="station-frequency" class="station-frequency">80s</h1>
                 <p id="station-name" class="station-name">Awesome 80s</p>
-                <p id="now-playing-info" class="now-playing-info"></p> </div>
-            <div class="visualizer-container">
-                <canvas id="visualizer"></canvas>
+                <p id="now-playing-info" class="now-playing-info"></p> 
             </div>
         </main>
+
+        <div class="visualizer-container">
+            <canvas id="visualizer"></canvas>
+        </div>
 
         <footer class="controls">
             <button id="prev-button" class="control-button" aria-label="Previous Station">
@@ -318,7 +326,7 @@
             const audioPlayer = document.getElementById('audio-player');
             const stationFrequencyEl = document.getElementById('station-frequency');
             const stationNameEl = document.getElementById('station-name');
-            const nowPlayingInfoEl = document.getElementById('now-playing-info'); // Nuevo elemento para la info de la canción
+            const nowPlayingInfoEl = document.getElementById('now-playing-info'); 
             const playPauseButton = document.getElementById('play-pause-button');
             const playIcon = document.getElementById('play-icon');
             const pauseIcon = document.getElementById('pause-icon');
@@ -374,7 +382,7 @@
                 const station = stations[currentStationIndex];
                 stationFrequencyEl.textContent = station.freq;
                 stationNameEl.textContent = station.name;
-                nowPlayingInfoEl.textContent = ''; // Limpiar la info de la canción al cambiar de estación
+                nowPlayingInfoEl.textContent = ''; 
                 
                 const freqNum = parseFloat(station.freq);
                 if (!isNaN(freqNum) && freqNum >= minFreq && freqNum <= maxFreq) {
@@ -458,7 +466,7 @@
                     source = audioContext.createMediaElementSource(audioPlayer);
                     source.connect(analyser);
                     analyser.connect(audioContext.destination);
-                    analyser.fftSize = 2048; 
+                    analyser.fftSize = 2048; // Mantenemos un buen tamaño para TimeDomain
                 } catch (e) {
                     console.error("Web Audio API not supported", e);
                 }
@@ -477,44 +485,58 @@
                 drawVisualizer();
             }
 
+            // *** FUNCIÓN DEL VISUALIZADOR ACTUALIZADA A BARRAS ***
             function drawVisualizer() {
                 const width = canvas.clientWidth;
                 const height = canvas.clientHeight;
                 canvasCtx.clearRect(0, 0, width, height);
 
                 if (!analyser || !isPlaying) return;
-                
+
                 const bufferLength = analyser.frequencyBinCount;
                 const dataArray = new Uint8Array(bufferLength);
-                analyser.getByteTimeDomainData(dataArray);
+                analyser.getByteTimeDomainData(dataArray); // Usamos TimeDomain para el efecto de onda
 
-                canvasCtx.lineWidth = 2;
-                canvasCtx.strokeStyle = visualizerColors[currentStationIndex];
-                canvasCtx.beginPath();
-                const sliceWidth = width * 1.0 / bufferLength;
-                let x = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    const v = dataArray[i] / 128.0;
-                    const y = v * height / 2;
-                    i === 0 ? canvasCtx.moveTo(x, y) : canvasCtx.lineTo(x, y);
-                    x += sliceWidth;
+                const numBars = 64; // Número de barras
+                const barWidth = width / numBars;
+                const sliceWidth = Math.floor(bufferLength / numBars);
+                const center_y = height / 2;
+
+                for (let i = 0; i < numBars; i++) {
+                    let sum = 0;
+                    for (let j = 0; j < sliceWidth; j++) {
+                        sum += dataArray[i * sliceWidth + j];
+                    }
+                    const avg = sum / sliceWidth;
+                    
+                    // (avg - 128) nos da la desviación del silencio (128)
+                    // (Math.abs / 128) lo normaliza a un valor entre 0 y 1
+                    // ( * height * 1.5) lo escala a la altura del canvas (con un x1.5 para más "pop")
+                    const barHeight = (Math.abs(avg - 128) / 128) * height * 1.5;
+
+                    canvasCtx.fillStyle = visualizerColors[currentStationIndex];
+                    
+                    const x = i * barWidth;
+                    const barGap = barWidth * 0.2; // 20% de espacio
+                    const barTrueWidth = barWidth - barGap;
+
+                    // Dibujamos la barra centrada verticalmente
+                    canvasCtx.fillRect(x + (barGap / 2), center_y - barHeight / 2, barTrueWidth, barHeight);
                 }
-                canvasCtx.lineTo(width, height / 2);
-                canvasCtx.stroke();
             }
+
 
             function setupEventListeners() {
                 playPauseButton.addEventListener('click', togglePlayPause);
                 nextButton.addEventListener('click', () => changeStation(1));
                 prevButton.addEventListener('click', () => changeStation(-1));
-                sleepTimerButton.addEventListener('click', toggleSleepTimer);
+                sleepTimerButton.addEventListener('click', toggleSleepTimer); 
                 audioPlayer.addEventListener('play', () => {
                     updatePlayPauseUI(true);
-                    // Aquí intentamos leer metadatos si el navegador lo soporta
                     getNowPlayingMetadata(); 
                 });
                 audioPlayer.addEventListener('pause', () => updatePlayPauseUI(false));
-                audioPlayer.addEventListener('ended', () => updatePlayPauseUI(false)); // Por si el stream termina
+                audioPlayer.addEventListener('ended', () => updatePlayPauseUI(false));
                 window.addEventListener('resize', setupCanvas);
             }
 
@@ -550,7 +572,7 @@
                 if ('mediaSession' in navigator) {
                     const station = stations[currentStationIndex];
                     navigator.mediaSession.metadata = new MediaMetadata({
-                        title: trackTitle || station.name, // Usa el título de la canción si está disponible
+                        title: trackTitle || station.name, 
                         artist: station.freq,
                         album: 'Radio PWA',
                         artwork: [
@@ -561,35 +583,20 @@
                 }
             }
 
-            // *** Nueva función para obtener metadatos de "Now Playing" ***
             function getNowPlayingMetadata() {
-                nowPlayingInfoEl.textContent = ''; // Limpiar previo
-
-                // Esto funciona mejor para streams con metadatos ID3 o ICY
-                // Sin embargo, el AudioContext no expone directamente los metadatos de texto
-                // Para streams Shoutcast/Icecast, a menudo los metadatos se envían por fuera del stream de audio
-                // o necesitan un proxy que los parsee.
-
-                // Por ahora, una aproximación sería la MediaSession API si la radio la usa,
-                // o si la estación ofrece una API JSON para "now playing".
-                // Dado que no tenemos una API para las estaciones, nos basamos en lo que pueda inferir MediaSession.
-
+                nowPlayingInfoEl.textContent = ''; 
                 if ('mediaSession' in navigator && navigator.mediaSession.metadata) {
                     const metadata = navigator.mediaSession.metadata;
-                    // Intentamos usar el título de la MediaSession si es diferente al nombre de la estación
                     if (metadata.title && metadata.title !== stations[currentStationIndex].name) {
                         nowPlayingInfoEl.textContent = metadata.title;
                     } else if (audioPlayer.mediaKeys && audioPlayer.mediaKeys.status === 'playing' && audioPlayer.textTracks) {
-                        // Algunas implementaciones de streams pueden usar text tracks para metadatos
-                        // Esto es más complejo y no universal
                         for (let i = 0; i < audioPlayer.textTracks.length; i++) {
                             const track = audioPlayer.textTracks[i];
                             if (track.kind === 'metadata' || track.label === 'lyrics' || track.label === 'chapter') {
-                                track.mode = 'showing'; // Intentar activar el track
+                                track.mode = 'showing'; 
                                 track.addEventListener('cuechange', function() {
                                     if (this.activeCues && this.activeCues.length > 0) {
                                         let text = this.activeCues[0].text;
-                                        // A veces viene en formato "artist - title"
                                         if (text && text.toLowerCase().includes(' - ')) {
                                             nowPlayingInfoEl.textContent = text;
                                             updateMediaSession(text);
@@ -600,15 +607,7 @@
                         }
                     }
                 }
-
-                // Para streams que usan encabezados ICY (Icecast/Shoutcast), se necesitaría un proxy.
-                // Sin un proxy o una API de la radio, es difícil acceder a esos metadatos directamente del cliente.
-                // Mantendremos esto simple por ahora, confiando en MediaSession o metadatos de track.
-                
-                // Si tienes acceso a una API de "now playing" para alguna de las radios,
-                // este sería el lugar para hacer un fetch y actualizar nowPlayingInfoEl.textContent.
             }
-
 
             init();
         });

@@ -1,10 +1,10 @@
-const CACHE_NAME = 'radio-pwa-cache-v3'; // Versión actualizada para forzar la actualización de la caché
+const CACHE_NAME = 'radio-pwa-cache-v4'; // Versión actualizada a v4
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/9801466.png'
-  // '1000067018.png' eliminado porque faltaba
+  '/9801466.png',
+  '/crescent-moon-png-21.png' // <-- Nuevo ícono de la luna añadido
 ];
 
 // Borrar cachés antiguas al activar el nuevo service worker
